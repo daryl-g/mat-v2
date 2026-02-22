@@ -215,3 +215,7 @@ __marimo__/
 # Prettier files
 .prettierignore
 .prettierrc
+
+# Data folder
+/data/opta
+/data/skillcorner

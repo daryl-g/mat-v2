@@ -3,6 +3,7 @@
 # Import necessary libraries
 import streamlit as st
 import os
+import base64
 
 # Custom modules
 from utils import load_image
@@ -36,6 +37,9 @@ class Styles:
         /* Background styling with image and gradient fallback */
         {self.background_style()}
 
+        /* Tab styling with borders and glow */
+        {self.st_tab(style_dict)}
+
         </style>
         """,
         )
@@ -56,7 +60,11 @@ class Styles:
             "text-color": "#f5fbff",
             "primary-color": "#9abddc",
             "title-color": "#3c3e40",
+            "alt-title-color": "#e5f3fd",
             "border-color": "#f5fbff",
+            "alt-border-color": "#3c3e40",
+            "dark-navy": "#2c5f8d",
+            "dark-green": "#2d7a4f",
         }
 
     # Set the global style
@@ -78,7 +86,11 @@ class Styles:
     def main_block(self) -> str:
         return """
         .stMainBlockContainer {
-            padding-top: 4.5rem;
+            padding-top: 3rem;
+        }
+        [data-testid="stHeader"] {
+            height: 3rem;
+            min-height: 3rem;
         }
         """
 
@@ -128,3 +140,77 @@ class Styles:
                     background-image: {gradient};
                 }}
             """
+
+    # Tab container styling
+    def st_tab(self, style_dict: dict) -> str:
+        """
+        Style Streamlit tabs with borders and background for active tab.
+
+        Args:
+            style_dict (dict): Dictionary with colour palette.
+        Returns:
+            str: CSS styles for tabs.
+        """
+        dark_navy = style_dict.get("dark-navy", "#2c5f8d")
+        title_color = style_dict.get("title-color", "#3c3e40")
+        text_color = style_dict.get("text-color", "#f5fbff")
+        border_color = style_dict.get("border-color", "#f5fbff")
+        alt_border_color = style_dict.get("alt-border-color", "#3c3e40")
+
+        return f"""
+        /* Tab container scrollbar styling */
+        div[data-baseweb="tab-list"] {{
+            scrollbar-width: thin;
+            scrollbar-color: {dark_navy} transparent;
+        }}
+        
+        div[data-baseweb="tab-list"]::-webkit-scrollbar {{
+            height: 8px;
+        }}
+        
+        div[data-baseweb="tab-list"]::-webkit-scrollbar-track {{
+            background: transparent;
+        }}
+        
+        div[data-baseweb="tab-list"]::-webkit-scrollbar-thumb {{
+            background-color: {dark_navy};
+            border-radius: 4px;
+        }}
+        
+        div[data-baseweb="tab-list"]::-webkit-scrollbar-thumb:hover {{
+            background-color: {dark_navy};
+            opacity: 0.8;
+        }}
+        
+        /* Tab button styling */
+        button[data-baseweb="tab"] {{
+            border: 2px solid {dark_navy};
+            border-bottom: none;
+            border-radius: 8px 8px 0 0;
+            padding: 0.5rem 1.5rem;
+            background-color: transparent;
+            transition: all 0.3s ease;
+            color: {title_color};
+        }}
+        
+        /* Active tab styling with background */
+        button[data-baseweb="tab"][aria-selected="true"] {{
+            border-color: {dark_navy};
+            background-color: rgba(44, 95, 141, 0.5);
+            color: {text_color};
+        }}
+        
+        /* Hover effect for non-active tabs */
+        button[data-baseweb="tab"]:hover:not([aria-selected="true"]) {{
+            background-color: rgba(45, 122, 79, 0.3);
+            color: {title_color};
+        }}
+        
+        /* Tab panel content area styling */
+        div[role="tabpanel"] {{
+            border: 1px solid {alt_border_color}33;
+            border-top: none;
+            border-radius: 0 0 8px 8px;
+            padding: 1rem;
+        }}
+        """
