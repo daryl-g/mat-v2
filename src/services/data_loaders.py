@@ -4,14 +4,19 @@
 import streamlit as st
 
 
-def render_opta_wyscout_inputs():
+def render_opta_wyscout_inputs(source: str) -> list:
     """
     Render input widgets for Opta/Wyscout data sources.
+
+    Args:
+        source (str): The data source name ("Opta" or "Wyscout").
 
     Returns:
         list: Uploaded files (if file upload selected), or empty list.
     """
     uploaded_files = []
+    uploaded_file_names = []
+    expected_opta_files = ["xgoal", "events", "passmap", "stats", "squad"]
 
     source_type = st.radio(
         "File source:",
@@ -32,13 +37,48 @@ def render_opta_wyscout_inputs():
                 st.warning("Not ready yet.")
     else:  # File Upload
         uploaded_files = st.file_uploader(
-            "Upload Opta/Wyscout file:",
+            f"Upload {source} file(s):",
             accept_multiple_files=True,
             type=["json"],
             key="opwy_upload",
         )
 
-    return uploaded_files
+        if st.button("Finish", key="finish_upload"):
+            with st.spinner("Validating files..."):
+                if source == "Opta":
+                    st.markdown(
+                        f"**Validating uploaded files** (Expecting: {', '.join(expected_opta_files)}):"
+                    )
+                    for file in uploaded_files:
+                        # Check file type first
+                        if file.type != "application/json":
+                            st.markdown(
+                                f"- ❌ {file.name} - Invalid file type (must be JSON)"
+                            )
+                            uploaded_files.remove(file)
+                        # Check file name for expected Opta files
+                        if not any(
+                            expected_file in file.name.lower()
+                            for expected_file in expected_opta_files
+                        ):
+                            st.markdown(f"- ❌ {file.name} - Unrecognised file!")
+                            uploaded_files.remove(file)
+                        else:
+                            matched_file = next(
+                                expected_file
+                                for expected_file in expected_opta_files
+                                if expected_file in file.name.lower()
+                            )
+                            st.markdown(f"- ✅ {file.name} - {matched_file} file found")
+
+                # Store the uploaded files in the temp folder
+                for file in uploaded_files:
+                    with open(f"data/tmp/{file.name}", "wb") as f:
+                        f.write(file.getbuffer())
+
+                    uploaded_file_names.append(file.name)
+
+    return uploaded_file_names
 
 
 def render_statsbomb_skillcorner_inputs(data_source: str):
