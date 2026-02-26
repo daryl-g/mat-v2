@@ -40,6 +40,9 @@ class Styles:
         /* Tab styling with borders and glow */
         {self.st_tab(style_dict)}
 
+        /* Warning and error message styling */
+        {self.st_error_warning(style_dict)}
+
         </style>
         """,
         )
@@ -58,6 +61,7 @@ class Styles:
             "bg-color": "#9abddc",
             "secondary-bg": "#d1e5f4",
             "text-color": "#f5fbff",
+            "alt-text-color": "#3c3e40",
             "primary-color": "#9abddc",
             "title-color": "#3c3e40",
             "alt-title-color": "#e5f3fd",
@@ -154,18 +158,23 @@ class Styles:
         dark_navy = style_dict.get("dark-navy", "#2c5f8d")
         title_color = style_dict.get("title-color", "#3c3e40")
         text_color = style_dict.get("text-color", "#f5fbff")
-        border_color = style_dict.get("border-color", "#f5fbff")
+        alt_title_color = style_dict.get("alt-title-color", "#e5f3fd")
         alt_border_color = style_dict.get("alt-border-color", "#3c3e40")
 
         return f"""
         /* Tab container scrollbar styling */
+        /*
         div[data-baseweb="tab-list"] {{
             scrollbar-width: thin;
-            scrollbar-color: {dark_navy} transparent;
+            scrollbar-color: {dark_navy};
         }}
         
         div[data-baseweb="tab-list"]::-webkit-scrollbar {{
-            height: 8px;
+            height: 10px;
+        }}
+        
+        div[data-baseweb="tab-list"]::-webkit-scrollbar-button {{
+            display: none;
         }}
         
         div[data-baseweb="tab-list"]::-webkit-scrollbar-track {{
@@ -174,36 +183,38 @@ class Styles:
         
         div[data-baseweb="tab-list"]::-webkit-scrollbar-thumb {{
             background-color: {dark_navy};
-            border-radius: 4px;
+            border-radius: 5px;
+            border: 1px solid {text_color}33;
         }}
         
         div[data-baseweb="tab-list"]::-webkit-scrollbar-thumb:hover {{
-            background-color: {dark_navy};
-            opacity: 0.8;
+            background-color: {dark_navy}DD;
+            border-color: {text_color}66;
         }}
+        */
         
         /* Tab button styling */
         button[data-baseweb="tab"] {{
-            border: 2px solid {dark_navy};
-            border-bottom: none;
+            border-bottom: 2px solid {dark_navy};
             border-radius: 8px 8px 0 0;
             padding: 0.5rem 1.5rem;
-            background-color: transparent;
+            background-color: {dark_navy}33;
             transition: all 0.3s ease;
             color: {title_color};
         }}
         
         /* Active tab styling with background */
         button[data-baseweb="tab"][aria-selected="true"] {{
-            border-color: {dark_navy};
-            background-color: rgba(44, 95, 141, 0.5);
+            border-bottom: 2px solid {"#c9022d"};
+            background-color: {"#f51848"}80;
+            box-shadow: 0 6px 2px -2px {"#c9022d"};
             color: {text_color};
         }}
         
         /* Hover effect for non-active tabs */
         button[data-baseweb="tab"]:hover:not([aria-selected="true"]) {{
-            background-color: rgba(45, 122, 79, 0.3);
-            color: {title_color};
+            background-color: {dark_navy}80;
+            color: {alt_title_color};
         }}
         
         /* Tab panel content area styling */
@@ -212,5 +223,28 @@ class Styles:
             border-top: none;
             border-radius: 0 0 8px 8px;
             padding: 1rem;
+        }}
+        """
+
+    # Warning/Error message styling
+    def st_error_warning(self, style_dict: dict) -> str:
+        """
+        Style Streamlit warning and error messages.
+
+        Args:
+            style_dict (dict): Dictionary with colour palette.
+        Returns:
+            str: CSS styles for warnings and errors.
+        """
+        alt_text_color = style_dict.get("alt-text-color", "#3c3e40")
+
+        return f"""
+        /* Warning message styling */
+        [data-testid="stAlertContentWarning"] {{
+            color: #878700;
+        }}
+        /* Error message styling */
+        [data-testid="stAlertContentError"] {{
+            color: #870000;
         }}
         """

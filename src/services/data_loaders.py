@@ -3,6 +3,8 @@
 # Imports
 import streamlit as st
 
+from utils import load_json
+
 
 def render_opta_wyscout_inputs(source: str) -> list:
     """
@@ -20,7 +22,13 @@ def render_opta_wyscout_inputs(source: str) -> list:
 
     source_type = st.radio(
         "File source:",
-        options=["From API", "File Upload"],
+        # Uncomment this later when everything is finalised
+        # options=["From API", "File Upload"],
+        options=[
+            "From API",
+            "File Upload",
+            "Load Local Data",
+        ],  # Only for development - to be removed later
         index=1,
         key="opta_source",
         horizontal=True,
@@ -35,7 +43,7 @@ def render_opta_wyscout_inputs(source: str) -> list:
         if st.button("Fetch", key="fetch_api"):
             with st.spinner(f"Fetching match {match_id} from API..."):
                 st.warning("Not ready yet.")
-    else:  # File Upload
+    elif source_type == "File Upload":
         uploaded_files = st.file_uploader(
             f"Upload {source} file(s):",
             accept_multiple_files=True,
@@ -76,7 +84,21 @@ def render_opta_wyscout_inputs(source: str) -> list:
                     with open(f"data/tmp/{file.name}", "wb") as f:
                         f.write(file.getbuffer())
 
-                    uploaded_file_names.append(file.name)
+                    uploaded_file_names.append("data/tmp/" + file.name)
+
+    else:  # Load Local Data (for development only - to be removed later)
+        st.warning("Loading local data from data/opta folder (for development only).")
+        # List all files in the data/tmp/ folder
+        import os
+
+        local_files = os.listdir("data/opta/U23 Asian Cup")
+        st.markdown(f"**Local files found:** {', '.join(local_files)}")
+        for file in local_files:
+            uploaded_file_names.append("data/opta/U23 Asian Cup/" + file)
+
+    for file_name in uploaded_file_names:
+        loaded_json = load_json(file_name)
+        st.markdown(f"- ✅ Loaded {file_name}")
 
     return uploaded_file_names
 

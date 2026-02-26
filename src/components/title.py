@@ -62,7 +62,7 @@ def page_title(
             """
         )
     else:
-        # Other pages: Use HTML + CSS to show title in toolbar area
+        # Other pages: Use HTML + CSS to show title at the top left in the header
         st.html(
             f"""
             <style>
@@ -81,8 +81,7 @@ def page_title(
                 .page-title-text {{
                     font-size: 1.3em;
                     color: {palette.get('alt-title-color', '#e5f3fd')};
-                    font-weight: 800;
-                    font-family: 'Roboto', sans-serif;
+                    font-weight: bold;
                     margin: 0;
                 }}
             </style>

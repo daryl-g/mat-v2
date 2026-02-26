@@ -5,11 +5,12 @@ import streamlit as st
 
 # Custom modules
 from utils import set_page_title
-from services.data_loaders import (
+from services import (
     render_opta_wyscout_inputs,
     render_statsbomb_skillcorner_inputs,
     render_blend_inputs,
     render_other_inputs,
+    load_summary,
 )
 from styles import Styles
 from components import page_title
@@ -28,13 +29,14 @@ page_title("Match Analysis Tool", is_home=False, palette=palette)
 # ---------------------------------------------------------------------------------------------------
 
 # Tab container
-tab1, tab2 = st.tabs(
-    ["(1) Load Data", "(2) Explore & Analyse"],
+tab1, tab2, tab3 = st.tabs(
+    ["(1) Load Data", "(2) Match Summary", "(3) Detailed Analysis"],
     default="(1) Load Data",
 )
 
 # Hardcoded variables
 data_sources = ["Opta", "StatsBomb", "SkillCorner", "Wyscout", "Blend", "Other"]
+vizzes_options = ["xG Timeline", "Pass Network", "Shot Map"]
 uploaded_files = []
 
 with tab1:
@@ -59,10 +61,35 @@ with tab1:
         other_source = render_other_inputs()
 
 with tab2:
-    # Get selected data source from session state
-    selected_data_source: str = st.session_state.get("data_source", "Opta")
+    # Check if any files have been uploaded
+    if len(uploaded_files) == 0:
+        st.error(
+            "No data files found. Please go back to the 'Load Data' tab and upload your files."
+        )
+    else:
+        # Layout setup
+        left_col, mid_col, right_col = st.columns(
+            [29, 42, 29], vertical_alignment="top"
+        )
 
-    st.markdown(f"Selected data source: {selected_data_source}")
+        # Left col: Top: Vertical home pass network, Bottom: Home player stats
+        # Mid col: Top: Match summary stats, Bottom: xG timeline + home & away shot maps
+        # Right col: Top: Vertical away pass network, Bottom: Away player stats
 
-    for file in uploaded_files:
-        st.markdown(f"- Uploaded file: {file}")
+        # Load and display match summary
+        with mid_col:
+            st.html(
+                """<p style="font-weight: bold; font-size: 2rem;">Match Summary</p>"""
+            )
+            summary_dict = load_summary(uploaded_files)
+            st.json(summary_dict)
+
+with tab3:
+    # Check if any files have been uploaded
+    if len(uploaded_files) == 0:
+        st.error(
+            "No data files found. Please go back to the 'Load Data' tab and upload your files."
+        )
+    else:
+        # Layout setup
+        viz_col, control_panel = st.columns([65, 35], vertical_alignment="top")

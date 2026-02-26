@@ -1,6 +1,7 @@
 # Utility functions
 
 # Imports
+import json
 import base64
 import pandas as pd
 import streamlit as st
@@ -9,7 +10,7 @@ import matplotlib.font_manager as fm  # Import fonts
 from PIL import Image
 
 
-@st.cache_data
+@st.cache_data(show_spinner=False, scope="session")
 def import_fonts(
     which: str = "roboto",
     weight: str = "regular",
@@ -48,7 +49,7 @@ def import_fonts(
             )
 
 
-@st.cache_data
+@st.cache_data(show_spinner=False, scope="session")
 def load_image(path: str, as_base64: bool = True) -> str | Image.Image:
     """
     Loads an image from the given path and optionally encodes it as a base64 string.
@@ -70,6 +71,24 @@ def load_image(path: str, as_base64: bool = True) -> str | Image.Image:
         return f"data:{mime_type};base64,{encoded_image}"
     else:
         return Image.open(path)
+
+
+@st.cache_data(show_spinner=False, scope="session")
+def load_json(path: str) -> dict:
+    """
+    Loads a JSON file from the given path.
+
+    Args:
+        path (str): Path to the JSON file.
+
+    Returns:
+        dict: The loaded JSON data as a dictionary.
+    """
+    with open(path, "r") as f:
+        data = json.load(f)
+        f.close()
+
+    return data
 
 
 @st.cache_resource
