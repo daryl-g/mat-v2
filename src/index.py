@@ -4,7 +4,7 @@
 import streamlit as st
 
 # Custom modules
-from utils.utils import load_image
+from utils import load_image
 from styles import Styles
 
 # Get colour palette
