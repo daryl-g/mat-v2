@@ -7,7 +7,8 @@ import matplotlib.pyplot as plt
 from mplsoccer import Pitch, VerticalPitch
 
 # Custom modules
-from logic.summary import load_formation
+from logic.summary import load_formation, load_kit_colors
+from logic.xgoal import PEN_XG as _PEN_XG
 from utils import import_fonts
 
 # Globally import the Roboto fonts for use in the plots
@@ -147,4 +148,334 @@ def plot_formation(
     fig.set_facecolor("none")  # Set figure background to transparent
     ax.set_facecolor("none")  # Set axes background to transparent
 
+    return fig
+
+
+# ---------------------------------------------------------------------------
+# Private helpers
+
+
+def _scatter_shots(
+    pitch, ax, shots: list, fill: str, edge: str, flip: bool = False
+) -> dict:
+    """
+    Scatter shot events onto a pitch axis.
+
+    Args:
+        pitch: mplsoccer Pitch or VerticalPitch instance.
+        ax: Matplotlib axes to draw on.
+        shots (list[dict]): Shot dicts from load_shots().
+        fill (str): Marker fill color.
+        edge (str): Marker edge color (falls back to "black" if empty).
+        flip (bool): Mirror coordinates around the pitch centre (for combined horizontal map).
+
+    Returns:
+        dict: Outcome counts — goals, on_target, post, blocked, off_target.
+    """
+    _MARKERS = {16: "o", 17: "o", 15: "^", 14: "s", 12: "D"}
+    counts = {"goals": 0, "on_target": 0, "post": 0, "blocked": 0, "off_target": 0}
+    edge_color = edge or "black"
+
+    for shot in shots:
+        x, y = float(shot["x"]), float(shot["y"])
+        if flip:
+            # Mirror around the pitch centre so home attacks the left goal
+            x = x - (x - 50.1) * 2
+            y = y - (y - 49.9) * 2
+
+        t = shot["shot_type"]
+        if t in (16, 17):
+            counts["goals"] += 1
+            counts["on_target"] += 1
+        elif t == 15:
+            counts["on_target"] += 1
+        elif t == 14:
+            counts["post"] += 1
+        elif t == 12:
+            counts["blocked"] += 1
+        else:
+            counts["off_target"] += 1
+
+        pitch.scatter(
+            x,
+            y,
+            s=max(700 * float(shot["xg"]), 30),
+            marker=_MARKERS.get(t, "X"),
+            color=fill,
+            edgecolors=edge_color,
+            linewidth=0.8,
+            zorder=2,
+            ax=ax,
+        )
+
+    return counts
+
+
+# ---------------------------------------------------------------------------
+# Public plotting functions
+
+
+def plot_xg_timeline(
+    xg_data,
+    axis_configs: dict,
+    home_kit: dict,
+    away_kit: dict,
+    home_name: str = "",
+    away_name: str = "",
+) -> plt.Figure:
+    """
+    Plot a cumulative xG timeline using data from load_xg_timeline and load_axis_configs.
+
+    Args:
+        xg_data (pd.DataFrame): DataFrame returned by load_xg_timeline().
+        axis_configs (dict): Dict returned by load_axis_configs().
+        home_kit (dict): Home kit colors, e.g. {"colour1": "#hex", "colour2": "#hex"}.
+        away_kit (dict): Away kit colors.
+        home_name (str): Home team name shown on the npxG summary label.
+        away_name (str): Away team name shown on the npxG summary label.
+
+    Returns:
+        plt.Figure: The matplotlib figure containing the xG timeline.
+    """
+    home_color = home_kit["colour1"]
+    home_edge = home_kit.get("colour2") or "black"
+    away_color = away_kit["colour1"]
+    away_edge = away_kit.get("colour2") or "black"
+
+    max_xg = axis_configs["max_xg"]
+    graph_end = axis_configs["graph_end_time"]
+    last_shot = axis_configs["last_shot"]
+    is_et = axis_configs["is_extra_time"]
+    boundary_pairs = axis_configs["boundary_pairs"]
+
+    bold_font = copy.copy(robotoBold)
+    bold_font.set_size(9)
+    regular_font = copy.copy(robotoRegular)
+    regular_font.set_size(9)
+
+    fig, ax = plt.subplots(figsize=(12, 5))
+    plt.box(False)
+    fig.set_facecolor("none")
+    ax.set_facecolor("none")
+
+    # Set axis limits first — xlim needed so grid fraction is correct
+    total_xlim = graph_end + 18
+    ax.set_xlim(0, total_xlim)
+    ax.set_ylim(0, max_xg * 1.05)
+
+    # Axis ticks and labels
+    plt.xticks(
+        axis_configs["x_times"], axis_configs["x_labels"], fontproperties=regular_font
+    )
+    plt.yticks(
+        axis_configs["y_times"], axis_configs["y_labels"], fontproperties=regular_font
+    )
+    plt.ylabel("Cumulative xG", fontproperties=bold_font)
+    plt.xlabel("Minutes Played", fontproperties=bold_font)
+    plt.tick_params(axis="both", which="both", length=0)
+
+    # Horizontal grid lines capped at graph_end (no bleed into the label area)
+    grid_xmax = graph_end / total_xlim
+    for y_val in axis_configs["y_times"][1:]:  # skip the 0 baseline
+        ax.axhline(
+            y_val,
+            xmin=0,
+            xmax=grid_xmax,
+            color="grey",
+            alpha=0.3,
+            linewidth=0.7,
+            zorder=1,
+        )
+
+    # Cumulative xG step lines (zorder 3 — below the boundary spans)
+    ax.step(
+        x="minute",
+        y="home_xg",
+        data=xg_data,
+        color=home_color,
+        linewidth=2.5,
+        where="post",
+        zorder=3,
+    )
+    ax.step(
+        x="minute",
+        y="away_xg",
+        data=xg_data,
+        color=away_color,
+        linewidth=2.5,
+        where="post",
+        zorder=3,
+    )
+    final_home_xg = float(xg_data["home_xg"].iloc[-1])
+    final_away_xg = float(xg_data["away_xg"].iloc[-1])
+    ax.step(
+        x=[last_shot, graph_end],
+        y=[final_home_xg, final_home_xg],
+        color=home_color,
+        linewidth=2.5,
+        where="post",
+        zorder=3,
+    )
+    ax.step(
+        x=[last_shot, graph_end],
+        y=[final_away_xg, final_away_xg],
+        color=away_color,
+        linewidth=2.5,
+        where="post",
+        zorder=3,
+    )
+
+    # Period boundary spans and lines drawn AFTER the step lines (zorder 4/5).
+    # Opaque white fill fully occludes the step lines in the gap region.
+    for start, end in boundary_pairs:
+        ax.axvspan(start, end, facecolor="white", alpha=1.0, zorder=4)
+        ax.axvline(start, color="grey", linestyle="-", alpha=0.6, zorder=5)
+        ax.axvline(end, color="grey", linestyle="-", alpha=0.6, zorder=5)
+
+    # End-of-match reference line
+    ax.axvline(graph_end, color="grey", linestyle="--", alpha=0.4, zorder=5)
+
+    # Goal and own-goal annotations
+    y_offset = max_xg * 0.04
+    for _, row in xg_data.iterrows():
+        if row["shot_type"] not in (16, 26) or (
+            row["home_scorer"] == "" and row["away_scorer"] == ""
+        ):
+            continue
+
+        is_home_goal = row["home_scorer"] != ""
+        scorer = row["home_scorer"] if is_home_goal else row["away_scorer"]
+        color = home_color if is_home_goal else away_color
+        edge_c = home_edge if is_home_goal else away_edge
+        y_val = float(row["home_xg"]) if is_home_goal else float(row["away_xg"])
+        xg_val = (
+            float(row["home_xg_shot"]) if is_home_goal else float(row["away_xg_shot"])
+        )
+        xgot_val = float(row["home_xgot"]) if is_home_goal else float(row["away_xgot"])
+
+        if row["shot_type"] == 16:
+            is_pen = abs(xg_val - _PEN_XG) < 0.001
+            label = f"{scorer}{' (pen)' if is_pen else ''}\n{xg_val:.2f} xG \n{xgot_val:.2f} xGOT"
+        else:
+            label = scorer
+
+        props = dict(boxstyle="round", facecolor="white", edgecolor=color, alpha=0.8)
+        ax.scatter(
+            row["minute"],
+            y_val,
+            s=60,
+            facecolors=color,
+            edgecolors=edge_c,
+            zorder=6,
+            linewidth=2,
+        )
+        ax.text(
+            row["minute"],
+            y_val + y_offset,
+            label,
+            ha="center",
+            color=color,
+            zorder=6,
+            fontproperties=bold_font,
+            bbox=props,
+            fontsize=7,
+        )
+
+    # npxG summary labels at the right edge, with team names
+    home_pens = int(((xg_data["home_xg_shot"] - _PEN_XG).abs() < 0.001).sum())
+    away_pens = int(((xg_data["away_xg_shot"] - _PEN_XG).abs() < 0.001).sum())
+
+    def _pen_str(n):
+        return f"{n} {'pen' if n <= 1 else 'pens'}"
+
+    home_npxg = final_home_xg - home_pens * _PEN_XG
+    away_npxg = final_away_xg - away_pens * _PEN_XG
+
+    def _label(name: str, npxg: float, pens: int) -> str:
+        stat_line = f"{npxg:.2f} npxG + {_pen_str(pens)}"
+        return f"{name}\n{stat_line}" if name else stat_line
+
+    label_x = graph_end + 1
+    ax.text(
+        label_x,
+        final_home_xg,
+        _label(home_name, home_npxg, home_pens),
+        color=home_color,
+        fontproperties=bold_font,
+        fontsize=9,
+        ha="left",
+        va="center",
+        zorder=6,
+    )
+    ax.text(
+        label_x,
+        final_away_xg,
+        _label(away_name, away_npxg, away_pens),
+        color=away_color,
+        fontproperties=bold_font,
+        fontsize=9,
+        ha="left",
+        va="center",
+        zorder=6,
+    )
+
+    # Period labels just inside the top of each period region
+    period_names = ["First half", "Second half"]
+    if is_et:
+        period_names += ["First ET", "Second ET"]
+
+    period_starts = [0] + [end for _, end in boundary_pairs]
+    period_ends = [start for start, _ in boundary_pairs] + [graph_end]
+    label_y = max_xg * 1.01
+    for idx, (start, end) in enumerate(zip(period_starts, period_ends)):
+        if idx >= len(period_names):
+            break
+        ax.text(
+            (start + end) / 2,
+            label_y,
+            period_names[idx],
+            fontproperties=bold_font,
+            fontsize=9,
+            ha="center",
+            va="bottom",
+        )
+
+    fig.tight_layout(pad=1.5)
+    return fig
+
+
+def plot_shot_map(
+    shots: list,
+    kit: dict,
+) -> plt.Figure:
+    """
+    Plot a half-pitch shot map for a single team.
+
+    Each shot is plotted as a scatter point on the attacking half (VerticalPitch,
+    half=True) with marker shape encoding the shot outcome and marker size
+    proportional to xG. Title and legend are intentionally omitted so callers
+    can use HTML/Markdown in the surrounding UI instead.
+
+    Args:
+        shots (list[dict]): Shot dicts from load_shots() for one team.
+        kit (dict): Kit colors, e.g. {"colour1": "#hex", "colour2": "#hex"}.
+
+    Returns:
+        plt.Figure: The matplotlib figure containing the shot map.
+    """
+    fill = kit["colour1"]
+    edge = kit.get("colour2") or "white"
+
+    pitch = VerticalPitch(
+        pitch_type="opta",
+        half=True,
+        pitch_color="grass",
+        line_color="white",
+        stripe=True,
+    )
+    fig, ax = pitch.draw(figsize=(5, 4))
+    _scatter_shots(pitch, ax, shots, fill, edge, flip=False)
+
+    fig.patch.set_facecolor("none")
+    fig.tight_layout(pad=0.5)
     return fig

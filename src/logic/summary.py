@@ -205,6 +205,52 @@ def load_formation(stats_path: str, side: str = "home") -> dict:
     return formation
 
 
+def load_kit_colors(stats_path: str, side: str = "home") -> dict:
+    """
+    Load the kit colors for the specified team from the stats JSON file.
+
+    Args:
+        stats_path (str): Path to the stats JSON file.
+        side (str): "home" or "away". Default is "home".
+
+    Returns:
+        dict: Kit colors containing:
+            - colour1 (str): Primary kit color (hex).
+            - colour2 (str): Secondary kit color (hex); empty string if not present.
+    """
+    if side not in ("home", "away"):
+        raise ValueError("Invalid side specified. Must be 'home' or 'away'.")
+
+    stats_file = load_json(stats_path)
+    match_info = stats_file.get("matchInfo", {})
+
+    team_id = next(
+        (
+            t.get("id", "")
+            for t in match_info.get("contestant", [])
+            if t.get("position") == side
+        ),
+        "",
+    )
+
+    team_lineup = next(
+        (
+            t
+            for t in stats_file.get("liveData", {}).get("lineUp", [])
+            if t.get("contestantId") == team_id
+        ),
+        None,
+    )
+    if not team_lineup:
+        return {"colour1": "#FFFFFF", "colour2": ""}
+
+    kit = team_lineup.get("kit", {})
+    return {
+        "colour1": kit.get("colour1", "#FFFFFF"),
+        "colour2": kit.get("colour2", ""),
+    }
+
+
 def load_substitutions(stats_path: str, side: str = "home") -> list:
     """
     Load the substitutions for the specified team, sorted by time.

@@ -13,8 +13,19 @@ from services import (
     render_blend_inputs,
     render_other_inputs,
 )
-from logic import load_summary, load_formation, load_substitutions, load_players
-from vizzes import plot_formation
+from logic import (
+    load_summary,
+    load_formation,
+    load_substitutions,
+    load_players,
+    load_kit_colors,
+    load_shots,
+    load_xg_timeline,
+    load_axis_configs,
+    load_minutes,
+    summarise_shots,
+)
+from vizzes import plot_formation, plot_xg_timeline, plot_shot_map
 from styles import Styles
 from components import page_title
 
@@ -99,6 +110,76 @@ def _render_match_header(summary_stats: dict, key_prefix: str) -> None:
             </div>
             """
         )
+
+
+_OUTCOME_ROWS = [
+    ("&#9679;", "Goal", "goals"),
+    ("&#9650;", "On target", "saved"),
+    ("&#9632;", "Hit post", "post"),
+    ("&#9670;", "Blocked", "blocked"),
+    ("&#10005;", "Off target", "off_target"),
+]
+
+
+def _shot_summary_html(kit: dict, summary: dict) -> str:
+    color = kit["colour1"]
+    rows_html = "".join(
+        f"""
+        <tr>
+            <td style="text-align:center; padding:0.2rem 0.5rem; color:{color}; font-size:1rem;">{sym}</td>
+            <td style="padding:0.2rem 0.5rem;">{label}</td>
+            <td style="text-align:right; padding:0.2rem 0.5rem;">{summary[key]['count']}</td>
+            <td style="text-align:right; padding:0.2rem 0.5rem;">{summary[key]['xg']:.2f}</td>
+        </tr>
+        """
+        for sym, label, key in _OUTCOME_ROWS
+    )
+    # Addendum rows for penalties and own goals (only rendered when count > 0)
+    addendum_rows = ""
+    if summary["penalties"]["count"] > 0:
+        n = summary["penalties"]["count"]
+        xg = summary["penalties"]["xg"]
+        addendum_rows += f"""
+        <tr style="color:rgba(128,128,128,0.8); font-style:italic; font-size:0.8rem;">
+            <td style="text-align:center; padding:0.1rem 0.5rem; color:{color};">&#9679;</td>
+            <td style="padding:0.1rem 0.5rem;">+ {n} {'penalty' if n == 1 else 'penalties'}</td>
+            <td style="text-align:right; padding:0.1rem 0.5rem;">{n}</td>
+            <td style="text-align:right; padding:0.1rem 0.5rem;">+{xg:.2f}</td>
+        </tr>
+        """
+    if summary["own_goals"]["count"] > 0:
+        n = summary["own_goals"]["count"]
+        addendum_rows += f"""
+        <tr style="color:rgba(128,128,128,0.8); font-style:italic; font-size:0.8rem;">
+            <td style="text-align:center; padding:0.1rem 0.5rem; color:{color};">&#9679;</td>
+            <td style="padding:0.1rem 0.5rem;">+ {n} own {'goal' if n == 1 else 'goals'}</td>
+            <td style="text-align:right; padding:0.1rem 0.5rem;">{n}</td>
+            <td style="text-align:right; padding:0.1rem 0.5rem;">&#8212;</td>
+        </tr>
+        """
+    return f"""
+    <table style="width:100%; border-collapse:collapse; font-size:0.85rem;">
+        <thead>
+            <tr style="border-bottom:1px solid rgba(128,128,128,0.3);">
+                <th style="padding:0.2rem 0.5rem;"></th>
+                <th style="text-align:left; padding:0.2rem 0.5rem;">Outcome</th>
+                <th style="text-align:right; padding:0.2rem 0.5rem;">Shots</th>
+                <th style="text-align:right; padding:0.2rem 0.5rem;">npxG</th>
+            </tr>
+        </thead>
+        <tbody>
+            {rows_html}
+            <tr style="border-top:1px solid rgba(128,128,128,0.3); font-weight:bold;">
+                <td></td>
+                <td style="padding:0.2rem 0.5rem;">Total</td>
+                <td style="text-align:right; padding:0.2rem 0.5rem;">{summary['total']['count']}</td>
+                <td style="text-align:right; padding:0.2rem 0.5rem;">{summary['total']['xg']:.2f}</td>
+            </tr>
+            {addendum_rows}
+        </tbody>
+    </table>
+    <p style="text-align:center; font-size:0.7rem; color:grey; margin-top:0.3rem;">Marker size correlates with xG value</p>
+    """
 
 
 # ---------------------------------------------------------------------------------------------------
@@ -286,12 +367,66 @@ with tab2:
 
             # xG & Shots
             with st.expander("xG & Shots", expanded=False):
-                xg_timeline = st.container(key="xg_timeline", border=True)
-                shots_map = st.container(key="shots_map")
-                home_shots_col, away_shots_col = shots_map.columns(
-                    2, vertical_alignment="top", border=True
+                stats_path_xg = next(
+                    (f for f in uploaded_files if f.endswith("stats.json")), ""
                 )
-                st.write("Blah")
+                events_path_xg = next(
+                    (f for f in uploaded_files if f.endswith("events.json")), ""
+                )
+                xgoal_path_xg = next(
+                    (f for f in uploaded_files if f.endswith("xgoal.json")), ""
+                )
+                try:
+                    home_kit = load_kit_colors(stats_path_xg, "home")
+                    away_kit = load_kit_colors(stats_path_xg, "away")
+                    configs = load_minutes(events_path_xg)
+                    xg_data = load_xg_timeline(xgoal_path_xg, configs)
+                    axis_configs = load_axis_configs(xg_data, configs)
+                    home_shots = load_shots(xgoal_path_xg, "home")
+                    away_shots = load_shots(xgoal_path_xg, "away")
+                    home_name = summary_stats["matchInfo"]["homeTeam"]
+                    away_name = summary_stats["matchInfo"]["awayTeam"]
+
+                    # xG Timeline
+                    xg_timeline = st.container(key="xg_timeline", border=True)
+                    xg_timeline_fig = plot_xg_timeline(
+                        xg_data,
+                        axis_configs,
+                        home_kit,
+                        away_kit,
+                        home_name=home_name,
+                        away_name=away_name,
+                    )
+                    xg_timeline.pyplot(xg_timeline_fig)
+
+                    # Shot Maps — one column per team
+                    home_shots_col, away_shots_col = st.columns(
+                        2, vertical_alignment="top", border=True
+                    )
+
+                    for col, name, kit, shots in [
+                        (
+                            home_shots_col,
+                            home_name,
+                            home_kit,
+                            home_shots,
+                        ),
+                        (
+                            away_shots_col,
+                            away_name,
+                            away_kit,
+                            away_shots,
+                        ),
+                    ]:
+                        summary = summarise_shots(shots)
+                        col.html(
+                            f"<p style='font-weight:bold; font-size:1.3rem; text-align:center; margin:0;'>{name}</p>"
+                        )
+                        col.pyplot(plot_shot_map(shots, kit))
+                        col.html(_shot_summary_html(kit, summary))
+
+                except Exception as e:
+                    st.error(f"Error plotting xG & Shots: {e}")
 
             st.space("small")
 
