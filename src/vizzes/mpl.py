@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 from mplsoccer import Pitch, VerticalPitch
 
 # Custom modules
-from services.logic.summary import load_formation
+from logic.summary import load_formation
 from utils import import_fonts
 
 # Globally import the Roboto fonts for use in the plots

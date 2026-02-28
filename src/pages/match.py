@@ -12,12 +12,9 @@ from services import (
     render_statsbomb_skillcorner_inputs,
     render_blend_inputs,
     render_other_inputs,
-    load_summary,
-    load_formation,
-    load_substitutions,
-    load_players,
-    plot_formation,
 )
+from logic import load_summary, load_formation, load_substitutions, load_players
+from vizzes import plot_formation
 from styles import Styles
 from components import page_title
 
@@ -81,11 +78,24 @@ def _render_match_header(summary_stats: dict, key_prefix: str) -> None:
             </div>
             """
         )
+        info = summary_stats["matchInfo"]
+        competition_parts = [
+            info["competition"],
+            info["tournamentCalendar"],
+            info["stage"],
+        ]
+        competition_line = " · ".join(p for p in competition_parts if p)
+        formatted_date = (
+            datetime.strptime(info["date"], "%Y-%m-%d").strftime("%B %d, %Y")
+            if info["date"]
+            else ""
+        )
+
         match_info_container.html(
             f"""
             <div class="comp-and-date" style="display: flex; flex-direction: column; align-items: center; gap: 0rem;">
-                <p style="font-size: 1rem; font-weight: light; text-align: center; color: {palette['alt-text-color']}; margin-bottom: 0.4rem;">{summary_stats['matchInfo']['competition']}</p>
-                <p style="font-size: 0.9rem; font-weight: light; text-align: center; color: {palette['alt-text-color']};">{(datetime.strptime(summary_stats['matchInfo']['date'], '%Y-%m-%d').strftime('%B %d, %Y') if summary_stats['matchInfo']['date'] else '')}</p>
+                <p style="font-size: 1rem; font-weight: light; text-align: center; color: {palette['alt-text-color']}; margin-bottom: 0.4rem;">{competition_line}</p>
+                <p style="font-size: 0.9rem; font-weight: light; text-align: center; color: {palette['alt-text-color']};">{formatted_date}</p>
             </div>
             """
         )
@@ -146,7 +156,7 @@ with tab2:
         with vizzes_container:
             match_stats = summary_stats["matchStats"]
 
-            # Summary stats
+            # Match Summary
             with st.expander("Match Summary", expanded=True):
                 home_vals = list(match_stats["home"].values())
                 stat_names = list(match_stats["home"].keys())
@@ -191,7 +201,6 @@ with tab2:
 
             # Lineups
             with st.expander("Lineups", expanded=False):
-                # Layout
                 home_formation_col, away_formation_col = st.columns(
                     2, vertical_alignment="top", border=True
                 )
@@ -216,7 +225,6 @@ with tab2:
                     """
                 )
 
-                # Plot the formations
                 stats_file_path = next(
                     (f for f in uploaded_files if f.endswith("stats.json")), ""
                 )
@@ -267,36 +275,36 @@ with tab2:
 
             st.space("small")
 
+            # Player Stats
             with st.expander("Player Stats", expanded=False):
-                # Layout
                 home_players_col, away_players_col = st.columns(
-                    2, vertical_alignment="center", border=True
+                    2, vertical_alignment="top", border=True
                 )
                 st.write("Blah")
 
             st.space("small")
 
+            # xG & Shots
             with st.expander("xG & Shots", expanded=False):
-                # Layout
                 xg_timeline = st.container(key="xg_timeline", border=True)
                 shots_map = st.container(key="shots_map")
                 home_shots_col, away_shots_col = shots_map.columns(
-                    2, vertical_alignment="center", border=True
+                    2, vertical_alignment="top", border=True
                 )
-
                 st.write("Blah")
 
             st.space("small")
 
+            # Pass Networks
             with st.expander("Pass Networks", expanded=False):
-                # Layout
                 home_pass_col, away_pass_col = st.columns(
-                    2, vertical_alignment="center", border=True
+                    2, vertical_alignment="top", border=True
                 )
                 st.write("Blah")
 
             st.space("small")
 
+            # Possession
             with st.expander("Possession", expanded=False):
                 st.write("Blah")
 
