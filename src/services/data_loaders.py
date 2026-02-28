@@ -1,6 +1,8 @@
 # Data loading functions for different data sources
 
 # Imports
+import os
+
 import streamlit as st
 
 from utils import load_json
@@ -89,8 +91,6 @@ def render_opta_wyscout_inputs(source: str) -> list:
     else:  # Load Local Data (for development only - to be removed later)
         st.warning("Loading local data from data/opta folder (for development only).")
         # List all files in the data/tmp/ folder
-        import os
-
         local_files = os.listdir("data/opta/U23 Asian Cup")
         st.markdown(f"**Local files found:** {', '.join(local_files)}")
         for file in local_files:

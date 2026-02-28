@@ -91,12 +91,22 @@ def load_json(path: str) -> dict:
     """
     with open(path, "r") as f:
         data = json.load(f)
-        f.close()
 
     return data
 
 
-@st.cache_resource
+def get_team_id(match_info: dict, side: str) -> str:
+    """Return the Opta contestant ID for the requested side ('home' or 'away')."""
+    return next(
+        (
+            c.get("id", "")
+            for c in match_info.get("contestant", [])
+            if c.get("position") == side
+        ),
+        "",
+    )
+
+
 def plotly_config() -> dict:
     """
     Just a quick function to get the configurations for the Plotly plot.

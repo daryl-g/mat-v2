@@ -2,7 +2,7 @@
 
 # Imports
 import pandas as pd
-from utils import load_json
+from utils import load_json, get_team_id
 
 # ---------------------------------------------------------------------------
 # Opta event type IDs for shots
@@ -25,18 +25,6 @@ PEN_XG = 0.7884
 
 # ---------------------------------------------------------------------------
 # Private helpers
-
-
-def _get_team_id(match_info: dict, side: str) -> str:
-    """Return the Opta contestant ID for the requested side."""
-    return next(
-        (
-            c.get("id", "")
-            for c in match_info.get("contestant", [])
-            if c.get("position") == side
-        ),
-        "",
-    )
 
 
 def _parse_qualifiers(qualifiers: list[dict]) -> dict:
@@ -79,7 +67,7 @@ def load_shots(xgoal_path: str, side: str = "home") -> list[dict]:
         raise ValueError("Invalid side specified. Must be 'home' or 'away'.")
 
     xgoal_data = load_json(xgoal_path)
-    team_id = _get_team_id(xgoal_data.get("matchInfo", {}), side)
+    team_id = get_team_id(xgoal_data.get("matchInfo", {}), side)
 
     shots = []
     for event in xgoal_data.get("liveData", {}).get("event", []):
@@ -159,7 +147,7 @@ def load_xg_timeline(xgoal_path: str, configs: dict) -> pd.DataFrame:
     """
     xgoal_data = load_json(xgoal_path)
     match_info = xgoal_data.get("matchInfo", {})
-    home_id = _get_team_id(match_info, "home")
+    home_id = get_team_id(match_info, "home")
 
     gap = configs["gap_width"]
     fht = configs["first_half_time"]
@@ -480,6 +468,8 @@ def summarise_shots(shots: list) -> dict:
         Penalties are detected by ``abs(xg - PEN_XG) < 0.001`` and isolated
         into their own bucket so ``total.xg`` reflects non-penalty xG only,
         matching the npxG label shown on the xG timeline.
+        ``penalties`` has ``scored`` and ``missed`` sub-counts in addition to
+        ``count`` and ``xg``.
     """
     buckets = {
         k: {"count": 0, "xg": 0.0}
@@ -489,11 +479,11 @@ def summarise_shots(shots: list) -> dict:
             "post",
             "blocked",
             "off_target",
-            "penalties",
             "own_goals",
             "total",
         )
     }
+    buckets["penalties"] = {"count": 0, "scored": 0, "missed": 0, "xg": 0.0}
     for shot in shots:
         t = shot["shot_type"]
         xg = float(shot["xg"])
@@ -508,6 +498,10 @@ def summarise_shots(shots: list) -> dict:
         if abs(xg - PEN_XG) < 0.001:
             buckets["penalties"]["count"] += 1
             buckets["penalties"]["xg"] += xg
+            if t == _TYPE_GOAL:
+                buckets["penalties"]["scored"] += 1
+            else:
+                buckets["penalties"]["missed"] += 1
             continue
 
         # Regular open-play shots

@@ -3,11 +3,12 @@
 # Imports
 import copy
 import matplotlib.pyplot as plt
+from matplotlib.colors import LinearSegmentedColormap
 
 from mplsoccer import Pitch, VerticalPitch
 
 # Custom modules
-from logic.summary import load_formation, load_kit_colors
+from logic.summary import load_formation
 from logic.xgoal import PEN_XG as _PEN_XG
 from utils import import_fonts
 
@@ -478,4 +479,139 @@ def plot_shot_map(
 
     fig.patch.set_facecolor("none")
     fig.tight_layout(pad=0.5)
+    return fig
+
+
+# Colormap for pass-network arrows: muted periwinkle → vivid indigo → deep violet.
+# Low-value arrows are pale and recede; high-value pairs saturate to deep violet
+# which stands out clearly against the app's cool blue background (#9abddc).
+_PASS_CMAP = LinearSegmentedColormap.from_list(
+    "pass_cmap", ["#a5b4fc", "#6366f1", "#4c1d95"]
+)
+
+
+def plot_pass_network(network: dict, kit: dict) -> plt.Figure:
+    """
+    Plot a passing network for a single team's starting XI.
+
+    Arrows between players are scaled in width and opacity by the number of
+    pass combinations. Node size reflects each player's accurate pass count.
+    The figure is transparent so it inherits the surrounding container background.
+
+    Args:
+        network (dict): Dict returned by load_pass_network(), containing
+            ``players`` (list of position/accuracy dicts) and ``passes``
+            (list of passer→receiver combination dicts).
+        kit (dict): Kit colors, e.g. {"colour1": "#hex", "colour2": "#hex"}.
+
+    Returns:
+        plt.Figure: The matplotlib figure containing the pass network.
+    """
+    fill_color = kit["colour1"]
+    edge_color = kit.get("colour2") or "white"
+
+    pitch = VerticalPitch(
+        pitch_type="opta",
+        pitch_color="none",
+        line_color="grey",
+        line_alpha=0.4,
+        linewidth=1,
+    )
+    fig, ax = pitch.draw(figsize=(5, 6))
+    fig.set_facecolor("none")
+    ax.set_facecolor("none")
+
+    players = network["players"]
+    passes = network["passes"]
+
+    player_lookup = {p["player_id"]: p for p in players}
+
+    # Scale arrows continuously against the max combination count
+    values = [p["value"] for p in passes]
+    max_val = max(values) if values else 1
+
+    label_font = copy.copy(robotoRegular)
+    label_font.set_size(7)
+
+    # Draw arrows first (below nodes)
+    for p in passes:
+        if p["from_id"] not in player_lookup or p["to_id"] not in player_lookup:
+            continue
+        val = p["value"]
+        if val < 3:
+            continue
+        src = player_lookup[p["from_id"]]
+        dst = player_lookup[p["to_id"]]
+
+        t = val / max_val  # 0..1
+        width = 1.5 + t * 4.5
+        rgba = (*_PASS_CMAP(t)[:3], 0.03 + t * 0.87)
+
+        pitch.arrows(
+            src["x"],
+            src["y"],
+            dst["x"],
+            dst["y"],
+            width=width,
+            headwidth=4,
+            headlength=2,
+            headaxislength=2,
+            color=rgba,
+            ax=ax,
+            zorder=2,
+        )
+
+    # Draw nodes and labels on top.
+    # With VerticalPitch, x maps to the vertical axis so the label offset
+    # is applied to x (not y) to position text above each node.
+    for p in players:
+        pitch.scatter(
+            p["x"],
+            p["y"],
+            s=max(60, p["pass_success"] * 5),
+            color=fill_color,
+            edgecolors=edge_color,
+            linewidths=1.5,
+            zorder=3,
+            ax=ax,
+        )
+        pitch.annotate(
+            p["name"],
+            (p["x"], p["y"]),
+            (p["x"] + 4, p["y"]),
+            ha="center",
+            va="bottom",
+            fontproperties=label_font,
+            fontsize=7.5,
+            color="black",
+            ax=ax,
+            zorder=4,
+        )
+
+    # Attacking direction indicator — bottom-left corner, pointing upward
+    ax.annotate(
+        "",
+        xy=(0.06, 0.18),
+        xytext=(0.06, 0.04),
+        xycoords="axes fraction",
+        textcoords="axes fraction",
+        arrowprops=dict(arrowstyle="-|>", color="grey", lw=1.2),
+        zorder=6,
+    )
+    ax.text(
+        0.015,
+        0.17,
+        "Attacking direction",
+        transform=ax.transAxes,
+        ha="center",
+        va="top",
+        fontproperties=label_font,
+        fontsize=6.5,
+        color="grey",
+        rotation=90,
+        zorder=6,
+    )
+
+    fig.tight_layout(pad=0)
+
     return fig

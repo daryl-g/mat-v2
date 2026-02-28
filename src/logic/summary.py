@@ -1,7 +1,7 @@
 # Compile a dictionary of match information and stats
 
 # Imports
-from utils import load_json
+from utils import load_json, get_team_id
 
 # Maps Opta stat types to display names. Formation is handled separately.
 _STAT_TYPE_MAP = {
@@ -171,10 +171,7 @@ def load_formation(stats_path: str, side: str = "home") -> dict:
     }
 
     # Get the target team ID
-    contestants = match_info.get("contestant", [])
-    team_id = next(
-        (team.get("id", "") for team in contestants if team.get("position") == side), ""
-    )
+    team_id = get_team_id(match_info, side)
 
     # Find the matching lineup entry
     live_data = stats_file.get("liveData", {})
@@ -224,14 +221,7 @@ def load_kit_colors(stats_path: str, side: str = "home") -> dict:
     stats_file = load_json(stats_path)
     match_info = stats_file.get("matchInfo", {})
 
-    team_id = next(
-        (
-            t.get("id", "")
-            for t in match_info.get("contestant", [])
-            if t.get("position") == side
-        ),
-        "",
-    )
+    team_id = get_team_id(match_info, side)
 
     team_lineup = next(
         (
@@ -268,10 +258,7 @@ def load_substitutions(stats_path: str, side: str = "home") -> list:
     stats_file = load_json(stats_path)
     match_info = stats_file.get("matchInfo", {})
 
-    contestants = match_info.get("contestant", [])
-    team_id = next(
-        (team.get("id", "") for team in contestants if team.get("position") == side), ""
-    )
+    team_id = get_team_id(match_info, side)
 
     raw_subs = stats_file.get("liveData", {}).get("substitute", [])
     subs = [
@@ -311,12 +298,7 @@ def load_players(stats_path: str, side: str = "home", full_name: bool = True) ->
     match_info = stats_file.get("matchInfo", {})
 
     # Resolve the target team ID
-    team_ids = {}
-    for team in match_info.get("contestant", []):
-        position = team.get("position")
-        if position in ("home", "away"):
-            team_ids[position] = team.get("id", "")
-    team_id = team_ids.get(side, "")
+    team_id = get_team_id(match_info, side)
 
     # Find the matching lineup entry
     live_data = stats_file.get("liveData", {})
