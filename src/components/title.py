@@ -81,7 +81,7 @@ def page_title(
                 .page-title-text {{
                     font-size: 1.3em;
                     color: {palette.get('alt-title-color', '#e5f3fd')};
-                    font-weight: bold;
+                    font-weight: 600;
                     margin: 0;
                 }}
             </style>

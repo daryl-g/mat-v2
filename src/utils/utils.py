@@ -3,11 +3,16 @@
 # Imports
 import json
 import base64
+from pathlib import Path
+
 import pandas as pd
 import streamlit as st
 import matplotlib.font_manager as fm  # Import fonts
 
 from PIL import Image
+
+# Resolve the project root (two levels up from this file: src/utils/ -> src/ -> root)
+_FONTS_DIR = Path(__file__).resolve().parent.parent.parent / "assets" / "fonts"
 
 
 @st.cache_data(show_spinner=False, scope="session")
@@ -29,10 +34,10 @@ def import_fonts(
     if which.lower() not in ["roboto"]:
         raise ValueError("Unknown font type. Please choose between 'roboto'.")
 
-    # Import the fonts from the same folder as this code
-    robotoRegular = fm.FontProperties(fname="src/assets/fonts/Roboto-Regular.ttf")
-    robotoLight = fm.FontProperties(fname="src/assets/fonts/Roboto-Light.ttf")
-    robotoBold = fm.FontProperties(fname="src/assets/fonts/Roboto-Bold.ttf")
+    # Import the fonts from the assets directory
+    robotoRegular = fm.FontProperties(fname=str(_FONTS_DIR / "Roboto-Regular.ttf"))
+    robotoLight = fm.FontProperties(fname=str(_FONTS_DIR / "Roboto-Light.ttf"))
+    robotoBold = fm.FontProperties(fname=str(_FONTS_DIR / "Roboto-Bold.ttf"))
 
     if which == "roboto":
         if weight == "all":

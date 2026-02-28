@@ -4,6 +4,10 @@ Originally intended to be a fresh, new coat of paint for the Match Analysis Tool
 
 Will get to fill out more of this Readme file later.
 
+## Dev notes:
+
+- v0.1: App will be deployed on Streamlit Cloud privately. Idea for the future is to deploy it onto Google Cloud Run.
+
 ---
 
 <div align="center">

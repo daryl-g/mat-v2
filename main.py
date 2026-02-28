@@ -8,7 +8,7 @@ from loguru import logger
 
 if __name__ == "__main__":
     try:
-        subprocess.run(["streamlit", "run", "src/index.py", "--server.port", "8080"])
+        subprocess.run(["streamlit", "run", "src/index.py"])
 
         # Clear the temp folder after the dashboard is closed
         temp_folder = "data/tmp"

@@ -109,9 +109,7 @@ class Styles:
         """
 
         bg_image_path = "assets/bg/fm_mat_bg.png"
-        gradient = (
-            "linear-gradient(to bottom, #9abddc, #b0cde4, #c6dced, #ddecf6, #f5fbff)"
-        )
+        gradient = "linear-gradient(to bottom, #9abddc, #f5fbff)"
 
         # Check if background image exists and encode it
         if os.path.exists(bg_image_path):
@@ -134,7 +132,7 @@ class Styles:
                 # If encoding fails, fallback to gradient only
                 return f"""
                     .stApp, [data-testid="stHeader"] {{
-                        background-image: {gradient};
+                        background: {gradient};
                     }}
                 """
         else:

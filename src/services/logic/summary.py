@@ -136,3 +136,181 @@ def load_summary(file_paths: list) -> dict:
                 )
 
     return summary_dict
+
+
+def load_formation(stats_path: str, side: str = "home") -> dict:
+    """
+    Load the formation for the specified team.
+
+    Args:
+        stats_path (str): Path to the stats JSON file.
+        side (str): "home" or "away" to specify which team's formation to load.
+
+    Returns:
+        dict: The team's formation and the corresponding player positions.
+    """
+    if side not in ("home", "away"):
+        raise ValueError("Invalid side specified. Must be 'home' or 'away'.")
+
+    stats_file = load_json(stats_path)
+    match_info = stats_file.get("matchInfo", {})
+
+    formation = {
+        "formation": "",
+        "kit": {
+            "colour1": "",
+            "colour2": "",
+        },
+        "players": {
+            # playerId: {
+            #     "shirtNumber": "",
+            #     "matchName": "",
+            #     "formationPlace": "",
+            # }
+        },
+    }
+
+    # Get the target team ID
+    contestants = match_info.get("contestant", [])
+    team_id = next(
+        (team.get("id", "") for team in contestants if team.get("position") == side), ""
+    )
+
+    # Find the matching lineup entry
+    live_data = stats_file.get("liveData", {})
+    team_lineup = next(
+        (t for t in live_data.get("lineUp", []) if t.get("contestantId") == team_id),
+        None,
+    )
+    if not team_lineup:
+        return {}
+
+    # Extract formation
+    formation["formation"] = team_lineup.get("formationUsed", [])
+
+    # Extract kit colors
+    formation["kit"]["colour1"] = team_lineup.get("kit", {}).get("colour1", "")
+    formation["kit"]["colour2"] = team_lineup.get("kit", {}).get("colour2", "")
+
+    # Extract player infos
+    for player in team_lineup.get("player", []):
+        if player.get("position", "") != "Substitute":
+            player_id = player.get("playerId", "")
+            formation["players"][player_id] = {
+                "shirtNumber": player.get("shirtNumber", ""),
+                "matchName": player.get("matchName", ""),
+                "formationPlace": int(player.get("formationPlace", 0)),
+            }
+
+    return formation
+
+
+def load_substitutions(stats_path: str, side: str = "home") -> list:
+    """
+    Load the substitutions for the specified team, sorted by time.
+
+    Args:
+        stats_path (str): Path to the stats JSON file.
+        side (str): "home" or "away" to specify which team's substitutions to load.
+
+    Returns:
+        list[tuple]: List of (player_off_name, player_on_name, time_min_sec) tuples, sorted by time.
+    """
+    if side not in ("home", "away"):
+        raise ValueError("Invalid side specified. Must be 'home' or 'away'.")
+
+    stats_file = load_json(stats_path)
+    match_info = stats_file.get("matchInfo", {})
+
+    contestants = match_info.get("contestant", [])
+    team_id = next(
+        (team.get("id", "") for team in contestants if team.get("position") == side), ""
+    )
+
+    raw_subs = stats_file.get("liveData", {}).get("substitute", [])
+    subs = [
+        (
+            sub.get("playerOffName", ""),
+            sub.get("playerOnName", ""),
+            sub.get("timeMinSec", ""),
+        )
+        for sub in raw_subs
+        if sub.get("contestantId") == team_id and sub.get("timeMinSec")
+    ]
+    return sorted(
+        subs,
+        key=lambda x: (
+            int(x[2].split(":")[0]),
+            int(x[2].split(":")[1]) if ":" in x[2] else 0,
+        ),
+    )
+
+
+def load_players(stats_path: str, side: str = "home", full_name: bool = True) -> dict:
+    """
+    Load the player list for the specified team.
+
+    Args:
+        stats_path (str): Path to the stats JSON file.
+        side (str): "home" or "away" to specify which team's players to load.
+        full_name (bool): Whether to return the player's full name (`shortFirstName` + `shortLastName`) or their match name.
+
+    Returns:
+        dict: Mapping of playerId to (shirtNumber, fullName).
+    """
+    if side not in ("home", "away"):
+        raise ValueError("Invalid side specified. Must be 'home' or 'away'.")
+
+    stats_file = load_json(stats_path)
+    match_info = stats_file.get("matchInfo", {})
+
+    # Resolve the target team ID
+    team_ids = {}
+    for team in match_info.get("contestant", []):
+        position = team.get("position")
+        if position in ("home", "away"):
+            team_ids[position] = team.get("id", "")
+    team_id = team_ids.get(side, "")
+
+    # Find the matching lineup entry
+    live_data = stats_file.get("liveData", {})
+    team_lineup = next(
+        (t for t in live_data.get("lineUp", []) if t.get("contestantId") == team_id),
+        None,
+    )
+    if not team_lineup:
+        return {}
+
+    players = {}
+    for player in team_lineup.get("player", []):
+        player_stats = player.get("stat", [])
+        has_played = any(stat.get("type") == "minsPlayed" for stat in player_stats)
+        if has_played:
+            player_id = player.get("playerId", "")
+            shirt_number = player.get("shirtNumber", "")
+            player_name = (
+                f"{player.get('shortFirstName', '')} {player.get('shortLastName', '')}".strip()
+                if full_name
+                else player.get("matchName", "")
+            )
+            players[player_id] = (shirt_number, player_name)
+
+    return players
+
+
+def load_player_stats(stats_path: str, side: str = "home") -> dict:
+    """
+    Load the player stats for the specified team.
+
+    Args:
+        stats_path (str): Path to the stats JSON file.
+        side (str): "home" or "away" to specify which team's player stats to load.
+
+    Returns:
+        dict: Mapping of playerId to their stats dictionary.
+    """
+    if side not in ("home", "away"):
+        raise ValueError("Invalid side specified. Must be 'home' or 'away'.")
+
+    # TODO: implement player stats loading
+    pass
