@@ -30,15 +30,55 @@ page_title("Match Analysis Tool", is_home=False, palette=palette)
 
 # ---------------------------------------------------------------------------------------------------
 
+# Hardcoded variables
+data_sources = ["Opta", "StatsBomb", "SkillCorner", "Wyscout", "Blend", "Other"]
+uploaded_files = st.session_state.get("uploaded_files", [])
+
+# Auto-load from tmp folder on first run if no files are in session yet
+if not uploaded_files:
+    _tmp_files = load_tmp_files()
+    if _tmp_files:
+        st.session_state["uploaded_files"] = _tmp_files
+        uploaded_files = _tmp_files
+
+# Load all match data once; invalidate whenever uploaded_files changes
+if uploaded_files and st.session_state.get("_loaded_files") != uploaded_files:
+    _stats_path = next((f for f in uploaded_files if f.endswith("stats.json")), "")
+    _events_path = next((f for f in uploaded_files if f.endswith("events.json")), "")
+    _xgoal_path = next((f for f in uploaded_files if f.endswith("xgoal.json")), "")
+    _passmap_path = next((f for f in uploaded_files if f.endswith("passmap.json")), "")
+    _configs = load_minutes(_events_path)
+    _xg_data = load_xg_timeline(_xgoal_path, _configs)
+
+    st.session_state.update(
+        {
+            "_loaded_files": uploaded_files,
+            "summary_stats": load_summary(uploaded_files),
+            "stats_path": _stats_path,
+            "events_path": _events_path,
+            "xgoal_path": _xgoal_path,
+            "passmap_path": _passmap_path,
+            "home_kit": load_kit_colors(_stats_path, "home"),
+            "away_kit": load_kit_colors(_stats_path, "away"),
+            "home_shots": load_shots(_xgoal_path, "home"),
+            "away_shots": load_shots(_xgoal_path, "away"),
+            "home_network": load_pass_network(_passmap_path, "home"),
+            "away_network": load_pass_network(_passmap_path, "away"),
+            "configs": _configs,
+            "xg_data": _xg_data,
+            "axis_configs": load_axis_configs(_xg_data, _configs),
+        }
+    )
+
+summary_stats = st.session_state.get("summary_stats")
+
+# ---------------------------------------------------------------------------------------------------
+
 # Tab container
 tab1, tab2, tab3 = st.tabs(
     ["(1) Load Data", "(2) Match Summary", "(3) Detailed Analysis"],
     default="(1) Load Data",
 )
-
-# Hardcoded variables
-data_sources = ["Opta", "StatsBomb", "SkillCorner", "Wyscout", "Blend", "Other"]
-uploaded_files = []
 
 with tab1:
     st.html("""<p style="font-weight: bold; font-size: 2rem;">Choose data source</p>""")
@@ -60,9 +100,6 @@ with tab1:
         selected_sources = render_blend_inputs(data_sources)
     elif data_source == "Other":
         other_source = render_other_inputs()
-
-# Load summary stats once, shared across tabs
-summary_stats = load_summary(uploaded_files) if uploaded_files else None
 
 with tab2:
     # Check if any files have been uploaded
@@ -152,17 +189,15 @@ with tab2:
                     """
                 )
 
-                stats_file_path = next(
-                    (f for f in uploaded_files if f.endswith("stats.json")), ""
-                )
+                stats_path = st.session_state.get("stats_path", "")
                 try:
                     home_formation_fig = plot_formation(
-                        stats_path=stats_file_path,
+                        stats_path=stats_path,
                         side="home",
                         vertical=True,
                     )
                     away_formation_fig = plot_formation(
-                        stats_path=stats_file_path,
+                        stats_path=stats_path,
                         side="away",
                         vertical=True,
                     )
@@ -174,7 +209,7 @@ with tab2:
                         (home_formation_col, "home"),
                         (away_formation_col, "away"),
                     ]:
-                        subs = load_substitutions(stats_file_path, side)
+                        subs = load_substitutions(stats_path, side)
                         if subs:
                             rows_html = "".join(
                                 f"""
@@ -213,23 +248,13 @@ with tab2:
 
             # xG & Shots
             with st.expander("xG & Shots", expanded=False):
-                stats_path_xg = next(
-                    (f for f in uploaded_files if f.endswith("stats.json")), ""
-                )
-                events_path_xg = next(
-                    (f for f in uploaded_files if f.endswith("events.json")), ""
-                )
-                xgoal_path_xg = next(
-                    (f for f in uploaded_files if f.endswith("xgoal.json")), ""
-                )
                 try:
-                    home_kit = load_kit_colors(stats_path_xg, "home")
-                    away_kit = load_kit_colors(stats_path_xg, "away")
-                    configs = load_minutes(events_path_xg)
-                    xg_data = load_xg_timeline(xgoal_path_xg, configs)
-                    axis_configs = load_axis_configs(xg_data, configs)
-                    home_shots = load_shots(xgoal_path_xg, "home")
-                    away_shots = load_shots(xgoal_path_xg, "away")
+                    home_kit = st.session_state["home_kit"]
+                    away_kit = st.session_state["away_kit"]
+                    home_shots = st.session_state["home_shots"]
+                    away_shots = st.session_state["away_shots"]
+                    xg_data = st.session_state["xg_data"]
+                    axis_configs = st.session_state["axis_configs"]
                     home_name = summary_stats["matchInfo"]["homeTeam"]
                     away_name = summary_stats["matchInfo"]["awayTeam"]
 
@@ -279,16 +304,10 @@ with tab2:
             # Pass Networks
             with st.expander("Pass Networks", expanded=False):
                 try:
-                    passmap_path = next(
-                        (f for f in uploaded_files if f.endswith("passmap.json")), ""
-                    )
-                    stats_path_pn = next(
-                        (f for f in uploaded_files if f.endswith("stats.json")), ""
-                    )
-                    home_kit_pn = load_kit_colors(stats_path_pn, "home")
-                    away_kit_pn = load_kit_colors(stats_path_pn, "away")
-                    home_network = load_pass_network(passmap_path, "home")
-                    away_network = load_pass_network(passmap_path, "away")
+                    home_kit_pn = st.session_state["home_kit"]
+                    away_kit_pn = st.session_state["away_kit"]
+                    home_network = st.session_state["home_network"]
+                    away_network = st.session_state["away_network"]
                     home_name_pn = summary_stats["matchInfo"]["homeTeam"]
                     away_name_pn = summary_stats["matchInfo"]["awayTeam"]
 
@@ -365,10 +384,9 @@ with tab3:
                         else "away"
                     )
 
-                    stats_file = next(
-                        (f for f in uploaded_files if f.endswith("stats.json")), ""
+                    players_list = load_players(
+                        st.session_state.get("stats_path", ""), side
                     )
-                    players_list = load_players(stats_file, side)
 
                     # Prefix with shirt number if available
                     players_list = [

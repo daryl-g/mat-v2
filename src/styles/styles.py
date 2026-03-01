@@ -237,12 +237,8 @@ class Styles:
         alt_text_color = style_dict.get("alt-text-color", "#3c3e40")
 
         return f"""
-        /* Warning message styling */
-        [data-testid="stAlertContentWarning"] {{
+        /* Message styling */
+        [data-testid="stAlertContentWarning"], [data-testid="stAlertContentError"] {{
             color: #878700;
-        }}
-        /* Error message styling */
-        [data-testid="stAlertContentError"] {{
-            color: #870000;
         }}
         """

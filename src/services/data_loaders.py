@@ -6,6 +6,28 @@ import os
 import streamlit as st
 
 from utils import load_json
+from .scrapers import Scrapers
+
+
+_VALID_OPTA_SUFFIXES = ("stats.json", "events.json", "xgoal.json", "passmap.json")
+
+
+def load_tmp_files() -> list:
+    """
+    Return paths of valid Opta match files already present in data/tmp/.
+    Excludes temp.json and any file whose name does not match a known suffix.
+
+    Returns:
+        list: Sorted list of file paths, or an empty list if none found.
+    """
+    try:
+        return sorted(
+            f"data/tmp/{f}"
+            for f in os.listdir("data/tmp")
+            if f != "temp.json" and any(f.endswith(s) for s in _VALID_OPTA_SUFFIXES)
+        )
+    except FileNotFoundError:
+        return []
 
 
 def render_opta_wyscout_inputs(source: str) -> list:
@@ -18,7 +40,6 @@ def render_opta_wyscout_inputs(source: str) -> list:
     Returns:
         list: Uploaded files (if file upload selected), or empty list.
     """
-    uploaded_files = []
     uploaded_file_names = []
     expected_opta_files = ["xgoal", "events", "passmap", "stats", "squad"]
 
@@ -39,12 +60,13 @@ def render_opta_wyscout_inputs(source: str) -> list:
     if source_type == "From API":
         match_id = st.text_input(
             label="Enter match ID:",
-            placeholder="e.g. 1234567",
+            placeholder="e.g. 1a2b3c4d5e6f7g",
             key="match_id",
         )
         if st.button("Fetch", key="fetch_api"):
-            with st.spinner(f"Fetching match {match_id} from API..."):
-                st.warning("Not ready yet.")
+            result = Scrapers().opta_scraper(match_id)
+            if result:
+                uploaded_file_names = list(result.values())
     elif source_type == "File Upload":
         uploaded_files = st.file_uploader(
             f"Upload {source} file(s):",
@@ -96,11 +118,14 @@ def render_opta_wyscout_inputs(source: str) -> list:
         for file in local_files:
             uploaded_file_names.append("data/opta/U23 Asian Cup/" + file)
 
-    for file_name in uploaded_file_names:
-        loaded_json = load_json(file_name)
-        st.markdown(f"- ✅ Loaded {file_name}")
+    # Persist successful file paths in session state so they survive reruns,
+    # then immediately rerun so the loading block at the top of match.py
+    # picks up the new files in the same interaction.
+    if uploaded_file_names:
+        st.session_state["uploaded_files"] = uploaded_file_names
+        st.rerun()
 
-    return uploaded_file_names
+    return st.session_state.get("uploaded_files", [])
 
 
 def render_statsbomb_skillcorner_inputs(data_source: str):
