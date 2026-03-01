@@ -6,7 +6,9 @@ Will get to fill out more of this Readme file later.
 
 ## Dev notes:
 
-- v0.1: App will be deployed on Streamlit Cloud privately. Idea for the future is to deploy it onto Google Cloud Run.
+- v0.1:
+    - App will be deployed on Streamlit Cloud privately. Idea for the future is to deploy it onto Google Cloud Run.
+    - App currently uses static Matplotlib vizzes as somewhat placeholders. Plan is to slowly transition to using Plotly for interactive and responsive vizzes.
 
 ---
 
