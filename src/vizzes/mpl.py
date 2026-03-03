@@ -5,12 +5,10 @@ import copy
 import matplotlib.pyplot as plt
 from matplotlib.colors import LinearSegmentedColormap
 
-from mplsoccer import Pitch, VerticalPitch
-
 # Custom modules
 from logic.summary import load_formation
-from logic.xgoal import PEN_XG as _PEN_XG
 from utils import import_fonts
+from vizzes.pitch import Pitch as PitchPreset
 
 # Globally import the Roboto fonts for use in the plots
 robotoRegular, robotoLight, robotoBold = import_fonts(which="roboto", weight="all")
@@ -63,37 +61,6 @@ def plot_formation(
         for player_info in formation["players"].values()
     ]
 
-    # Set up the pitch
-    pitch_line_color = "#635959"
-    pitch_line_alpha = 0.2
-    pitch_line_width = 1
-    if vertical:
-        pitch = VerticalPitch(
-            pitch_type=pitch_type,
-            goal_type="line",
-            goal_alpha=pitch_line_alpha,
-            line_color=pitch_line_color,
-            line_alpha=pitch_line_alpha,
-            linewidth=pitch_line_width,
-            pad_top=1,
-            pad_bottom=1,
-            pad_left=1,
-            pad_right=1,
-        )
-    else:
-        pitch = Pitch(
-            pitch_type=pitch_type,
-            goal_type="line",
-            goal_alpha=pitch_line_alpha,
-            line_color=pitch_line_color,
-            line_alpha=pitch_line_alpha,
-            linewidth=pitch_line_width,
-            pad_top=1,
-            pad_bottom=1,
-            pad_left=1,
-            pad_right=1,
-        )
-
     # Use a per-call font copy so the global object is never mutated
     font_size = 6 if vertical else 7.5
     regular_font = copy.copy(robotoRegular)
@@ -102,7 +69,16 @@ def plot_formation(
     bold_font = copy.copy(robotoBold)
     bold_font.set_size(font_size)
 
-    fig, ax = pitch.draw(figsize=(6, 4))
+    pitch, fig, ax = PitchPreset(
+        vertical=vertical,
+        pitch_type=pitch_type,
+        goal_type="line",
+        goal_alpha=0.2,
+        pad_top=1,
+        pad_bottom=1,
+        pad_left=1,
+        pad_right=1,
+    ).draw(figsize=(6, 4))
     fig.tight_layout(pad=0)
 
     # Plot the player names
@@ -355,8 +331,8 @@ def plot_xg_timeline(
         xgot_val = float(row["home_xgot"]) if is_home_goal else float(row["away_xgot"])
 
         if row["shot_type"] == 16:
-            is_pen = abs(xg_val - _PEN_XG) < 0.001
-            label = f"{scorer}{' (pen)' if is_pen else ''}\n{xg_val:.2f} xG \n{xgot_val:.2f} xGOT"
+            is_pen = bool(row["is_penalty"])
+            label = f"{scorer}{' (pen)' if is_pen else ''}\n{xg_val:.2f} xG\n{xgot_val:.2f} xGOT"
         else:
             label = scorer
 
@@ -383,14 +359,18 @@ def plot_xg_timeline(
         )
 
     # npxG summary labels at the right edge, with team names
-    home_pens = int(((xg_data["home_xg_shot"] - _PEN_XG).abs() < 0.001).sum())
-    away_pens = int(((xg_data["away_xg_shot"] - _PEN_XG).abs() < 0.001).sum())
+    _home_pen_mask = xg_data["is_penalty"] & (xg_data["home_xg_shot"] > 0)
+    _away_pen_mask = xg_data["is_penalty"] & (xg_data["away_xg_shot"] > 0)
+    home_pens = int(_home_pen_mask.sum())
+    away_pens = int(_away_pen_mask.sum())
+    home_pen_xg = float(xg_data.loc[_home_pen_mask, "home_xg_shot"].sum())
+    away_pen_xg = float(xg_data.loc[_away_pen_mask, "away_xg_shot"].sum())
 
     def _pen_str(n):
         return f"{n} {'pen' if n <= 1 else 'pens'}"
 
-    home_npxg = final_home_xg - home_pens * _PEN_XG
-    away_npxg = final_away_xg - away_pens * _PEN_XG
+    home_npxg = final_home_xg - home_pen_xg
+    away_npxg = final_away_xg - away_pen_xg
 
     def _label(name: str, npxg: float, pens: int) -> str:
         stat_line = f"{npxg:.2f} npxG + {_pen_str(pens)}"
@@ -448,6 +428,7 @@ def plot_xg_timeline(
 def plot_shot_map(
     shots: list,
     kit: dict,
+    **pitch_overrides,
 ) -> plt.Figure:
     """
     Plot a half-pitch shot map for a single team.
@@ -460,6 +441,8 @@ def plot_shot_map(
     Args:
         shots (list[dict]): Shot dicts from load_shots() for one team.
         kit (dict): Kit colors, e.g. {"colour1": "#hex", "colour2": "#hex"}.
+        **pitch_overrides: Optional mplsoccer VerticalPitch kwargs merged into
+            the shot-map defaults, e.g. ``pitch_color="grass", stripe=True``.
 
     Returns:
         plt.Figure: The matplotlib figure containing the shot map.
@@ -467,14 +450,11 @@ def plot_shot_map(
     fill = kit["colour1"]
     edge = kit.get("colour2") or "white"
 
-    pitch = VerticalPitch(
+    pitch, fig, ax = PitchPreset(
         pitch_type="opta",
         half=True,
-        pitch_color="grass",
-        line_color="white",
-        stripe=True,
-    )
-    fig, ax = pitch.draw(figsize=(5, 4))
+        **pitch_overrides,
+    ).draw(figsize=(5, 4))
     _scatter_shots(pitch, ax, shots, fill, edge, flip=False)
 
     fig.patch.set_facecolor("none")
@@ -490,7 +470,7 @@ _PASS_CMAP = LinearSegmentedColormap.from_list(
 )
 
 
-def plot_pass_network(network: dict, kit: dict) -> plt.Figure:
+def plot_pass_network(network: dict, kit: dict, **pitch_overrides) -> plt.Figure:
     """
     Plot a passing network for a single team's starting XI.
 
@@ -503,6 +483,8 @@ def plot_pass_network(network: dict, kit: dict) -> plt.Figure:
             ``players`` (list of position/accuracy dicts) and ``passes``
             (list of passer→receiver combination dicts).
         kit (dict): Kit colors, e.g. {"colour1": "#hex", "colour2": "#hex"}.
+        **pitch_overrides: Optional mplsoccer VerticalPitch kwargs merged into
+            the pass-network defaults, e.g. ``line_alpha=0.6``.
 
     Returns:
         plt.Figure: The matplotlib figure containing the pass network.
@@ -510,14 +492,10 @@ def plot_pass_network(network: dict, kit: dict) -> plt.Figure:
     fill_color = kit["colour1"]
     edge_color = kit.get("colour2") or "white"
 
-    pitch = VerticalPitch(
+    pitch, fig, ax = PitchPreset(
         pitch_type="opta",
-        pitch_color="none",
-        line_color="grey",
-        line_alpha=0.4,
-        linewidth=1,
-    )
-    fig, ax = pitch.draw(figsize=(5, 6))
+        **pitch_overrides,
+    ).draw(figsize=(5, 6))
     fig.set_facecolor("none")
     ax.set_facecolor("none")
 

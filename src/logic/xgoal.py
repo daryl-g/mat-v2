@@ -19,8 +19,8 @@ _QUAL_BLOCKED = 82
 # Default gap width (minutes) inserted between halves in the xG timeline
 _GAP_WIDTH = 2
 
-# Opta's standard xG value for a penalty — used to detect and strip penalty xG
-PEN_XG = 0.7884
+# Opta qualifier ID for penalty attempts
+_QUAL_PENALTY = 9
 
 
 # ---------------------------------------------------------------------------
@@ -58,6 +58,7 @@ def load_shots(xgoal_path: str, side: str = "home") -> list[dict]:
             - player_name (str) : Name of the player who took the shot.
             - scorer_name (str) : Annotated name for goal events only;
                                   includes " (OG)" suffix for own goals.
+            - is_penalty (bool) : True when the penalty qualifier (9) is present.
             - xg   (float): xG value (qualifier 321); 0.0 if absent.
             - xgot (float): xGOT value (qualifier 322); 0.0 if absent.
             - x    (float): Opta x-coordinate of the shot origin.
@@ -104,6 +105,7 @@ def load_shots(xgoal_path: str, side: str = "home") -> list[dict]:
                 "time_min": event.get("timeMin"),
                 "shot_type": shot_type,
                 "is_own_goal": is_own_goal,
+                "is_penalty": _QUAL_PENALTY in quals,
                 "player_name": event.get("playerName", ""),
                 "scorer_name": scorer_name,
                 "xg": float(quals.get(_QUAL_XG) or 0),
@@ -178,6 +180,7 @@ def load_xg_timeline(xgoal_path: str, configs: dict) -> pd.DataFrame:
             "home_xgot": 0.0,
             "away_xgot": 0.0,
             "shot_type": 0,
+            "is_penalty": False,
         }
     ]
 
@@ -248,6 +251,7 @@ def load_xg_timeline(xgoal_path: str, configs: dict) -> pd.DataFrame:
                 "home_xgot": home_xgot,
                 "away_xgot": away_xgot,
                 "shot_type": shot_type,
+                "is_penalty": _QUAL_PENALTY in quals,
             }
         )
 
@@ -465,9 +469,10 @@ def summarise_shots(shots: list) -> dict:
                 "total":      {"count": int, "xg": float},  # npxG (no pen xG)
             }
 
-        Penalties are detected by ``abs(xg - PEN_XG) < 0.001`` and isolated
-        into their own bucket so ``total.xg`` reflects non-penalty xG only,
-        matching the npxG label shown on the xG timeline.
+        Penalties are detected by qualifier ID 9 (``is_penalty`` flag set by
+        ``load_shots``) and isolated into their own bucket so ``total.xg``
+        reflects non-penalty xG only, matching the npxG label shown on the xG
+        timeline.
         ``penalties`` has ``scored`` and ``missed`` sub-counts in addition to
         ``count`` and ``xg``.
     """
@@ -494,8 +499,8 @@ def summarise_shots(shots: list) -> dict:
             buckets["own_goals"]["count"] += 1
             continue
 
-        # Penalties: all attempts (scored or not) detected by xG threshold
-        if abs(xg - PEN_XG) < 0.001:
+        # Penalties: all attempts (scored or not) detected by qualifier 9
+        if shot["is_penalty"]:
             buckets["penalties"]["count"] += 1
             buckets["penalties"]["xg"] += xg
             if t == _TYPE_GOAL:

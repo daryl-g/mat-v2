@@ -12,64 +12,86 @@ from mplsoccer import Pitch as MplPitch, VerticalPitch as MplVerticalPitch
 
 class Pitch:
     """
-    Class to draw a pitch.
+    Class to draw an mplsoccer pitch with arbitrary configuration.
+
+    Pass any keyword argument accepted by mplsoccer's ``Pitch`` or
+    ``VerticalPitch`` directly to the constructor; they are forwarded verbatim
+    when ``draw()`` is called.  This keeps a single, flexible entry-point
+    instead of per-use-case factory methods.
+
+    Example::
+
+        pitch, fig, ax = Pitch(
+            pitch_type="opta",
+            half=True,
+        ).draw(figsize=(5, 4))
     """
 
     def __init__(
         self,
         lib: Literal["plotly", "mpl"] = "mpl",
-        vertical: bool = False,
+        vertical: bool = True,
+        pitch_color: str = "none",
+        line_color: str = "grey",
+        line_alpha: float = 0.5,
+        linewidth: int | float = 1,
+        **pitch_kwargs,
     ):
         """
-        Initialise the Pitch class and pass user-specified values onto child functions.
-
         Args:
-            lib (str): Library to draw the pitch with.
-                - Options are "plotly" and "mpl" (for mplsoccer).
-                - Default is "mpl`(for mplsoccer).
-            vertical (bool): Whether to draw a vertical pitch or not. Default is False (i.e. horizontal pitch).
+            lib (str): Rendering backend — ``"mpl"`` (mplsoccer) or ``"plotly"``.
+                Default is ``"mpl"``.
+            vertical (bool): Use ``VerticalPitch`` when True, ``Pitch`` when
+                False. Default is True.
+            pitch_color (str): Pitch background colour. Default is ``"none"``
+                (transparent) so the figure inherits the surrounding container
+                background.
+            line_color (str): Pitch line colour. Default is ``"grey"``.
+            line_alpha (float): Pitch line opacity (0–1). Default is ``0.5``.
+            linewidth (int | float): Pitch line width in points. Default is ``1``.
+            **pitch_kwargs: Any remaining keyword argument accepted by
+                mplsoccer's ``Pitch`` or ``VerticalPitch`` (e.g. ``pitch_type``,
+                ``half``, ``stripe``, ``goal_type``, …).  ``pitch_type`` is
+                intentionally left without a default so callers always supply
+                it explicitly from the active data-source context.
         """
-        # Input checking
-        if lib in ["plotly", "mpl"]:
-            self.lib: str = lib
-        else:
+        if lib not in ("plotly", "mpl"):
             raise ValueError(
                 "Unknown library. Please choose between 'plotly' and 'mpl'."
             )
-
+        self.lib: str = lib
         self.vertical: bool = vertical
+        self._pitch_kwargs: dict = {
+            "pitch_color": pitch_color,
+            "line_color": line_color,
+            "line_alpha": line_alpha,
+            "linewidth": linewidth,
+            **pitch_kwargs,
+        }
 
-    # Ask the user for pitch configs
-    def configs(self, **kwargs) -> None:
+    def draw(self, figsize: tuple | None = None) -> tuple:
         """
-        Store mplsoccer pitch configuration kwargs to be used when drawing.
-        Any keyword argument accepted by mplsoccer's Pitch or VerticalPitch can be passed here.
-        See: https://mplsoccer.readthedocs.io/en/latest/gallery/pitch_setup/plot_pitches.html
+        Draw the pitch and return the mplsoccer instance alongside the figure.
 
-        Example:
-            pitch.configs(pitch_type='opta', pitch_color='#22312b', line_color='#c7d5cc')
-        """
-        if self.lib == "plotly":
-            print("Plotly configs not yet available.")
-            return
+        Args:
+            figsize (tuple | None): Optional ``(width, height)`` in inches
+                forwarded to mplsoccer's draw call.
 
-        # Store all kwargs — they will be unpacked into the mplsoccer constructor in draw()
-        self.mpl_configs = kwargs
-
-    # Draw the pitch
-    def draw(self):
-        """
-        Draw the pitch using the stored configs and return the (fig, ax) tuple.
+        Returns:
+            tuple: ``(mpl_pitch, fig, ax)`` where ``mpl_pitch`` is the
+            underlying mplsoccer object — required for calls like
+            ``pitch.scatter()``, ``pitch.arrows()``, ``pitch.formation()``,
+            ``pitch.annotate()``, etc.
         """
         if self.lib == "plotly":
             print("Plotly draw not yet available.")
             return None
 
-        configs = getattr(self, "mpl_configs", {})
         pitch_cls = MplVerticalPitch if self.vertical else MplPitch
-        pitch = pitch_cls(**configs)
-        fig, ax = pitch.draw()
-        return fig, ax
+        mpl_pitch = pitch_cls(**self._pitch_kwargs)
+        draw_kwargs = {"figsize": figsize} if figsize is not None else {}
+        fig, ax = mpl_pitch.draw(**draw_kwargs)
+        return mpl_pitch, fig, ax
 
 
 class PlotlyPitch:

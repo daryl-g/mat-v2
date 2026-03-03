@@ -31,6 +31,7 @@ page_title("Match Analysis Tool", is_home=False, palette=palette)
 # ---------------------------------------------------------------------------------------------------
 
 # Hardcoded variables
+_LOWER_IS_BETTER = frozenset({"Fouls committed", "Yellow cards", "Red cards"})
 data_sources = ["Opta", "StatsBomb", "SkillCorner", "Wyscout", "Blend", "Other"]
 uploaded_files = st.session_state.get("uploaded_files", [])
 
@@ -136,7 +137,7 @@ with tab2:
                 cells_html = "".join(
                     f"""
                     <p class="home-stats" style="text-align: right; margin: 0; margin-right: 1rem; padding: 0.3rem 0;
-                        color: {_stat_color(home_val, away_val, stat_name == "Formation", palette)};
+                        color: {_stat_color(home_val, away_val, stat_name == "Formation", palette, stat_name in _LOWER_IS_BETTER)};
                         {'' if i == len(rows) - 1 else divider}">
                         {home_val or 0}
                     </p>
@@ -145,7 +146,7 @@ with tab2:
                         {stat_name}
                     </p>
                     <p class="away-stats" style="text-align: left; margin: 0; margin-left: 1rem; padding: 0.3rem 0;
-                        color: {_stat_color(away_val, home_val, stat_name == "Formation", palette)};
+                        color: {_stat_color(away_val, home_val, stat_name == "Formation", palette, stat_name in _LOWER_IS_BETTER)};
                         {'' if i == len(rows) - 1 else divider}">
                         {away_val or 0}
                     </p>
@@ -239,6 +240,10 @@ with tab2:
 
             # Player Stats
             with st.expander("Player Stats", expanded=False):
+                # Layout
+                home_gk_col, away_gk_col = st.columns(
+                    2, vertical_alignment="top", border=True
+                )
                 home_players_col, away_players_col = st.columns(
                     2, vertical_alignment="top", border=True
                 )

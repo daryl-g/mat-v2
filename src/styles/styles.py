@@ -238,7 +238,7 @@ class Styles:
 
         return f"""
         /* Message styling */
-        [data-testid="stAlertContentWarning"], [data-testid="stAlertContentError"] {{
+        [data-testid="stAlertContentSuccess"], [data-testid="stAlertContentWarning"], [data-testid="stAlertContentError"] {{
             color: #878700;
         }}
         """

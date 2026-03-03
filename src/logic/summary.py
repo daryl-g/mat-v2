@@ -4,7 +4,7 @@
 from utils import load_json, get_team_id
 
 # Maps Opta stat types to display names. Formation is handled separately.
-_STAT_TYPE_MAP = {
+_MATCH_STAT_TYPE_MAP = {
     "totalScoringAtt": "Shots attempted",
     "ontargetScoringAtt": "Shots on target",
     "possessionPercentage": "Possession %",
@@ -13,6 +13,30 @@ _STAT_TYPE_MAP = {
     "fkFoulLost": "Fouls committed",
     "totalYellowCard": "Yellow cards",
     "totalRedCard": "Red cards",
+}
+_KEEPER_STAT_TYPE_MAP = {
+    "minsPlayed": "Minutes played",
+    "goalsConceded": "Goals conceded",
+    "saves": "Saves",
+    "totalPass": "Passes made",
+    "accuratePass": "Passes completed",
+    "goalKicks": "Goal kicks",
+}
+_OUTFIELD_STAT_TYPE_MAP = {
+    "minsPlayed": "Minutes played",
+    "goals": "Goals",
+    "goalAssist": "Assists",
+    "totalScoringAtt": "Shots attempted",
+    "ontargetScoringAtt": "Shots on target",
+    "totalPass": "Passes made",
+    "accuratePass": "Passes completed",
+    "totalTackle": "Tackles",
+    "wonTackle": "Tackles won",
+    "blockedScoringAtt": "Shots blocked",
+    "totalClearance": "Clearances",
+    "fouls": "Fouls committed",
+    "yellowCard": "Yellow cards",
+    "redCard": "Red cards",
 }
 
 # Maps period IDs to their summary key
@@ -23,7 +47,9 @@ _SCORE_KEY_MAP = {"ht": "ht", "ft": "ft", "et": "et", "pen": "penalties"}
 
 
 def _empty_team_stats() -> dict:
-    return {display: "" for display in ["Formation"] + list(_STAT_TYPE_MAP.values())}
+    return {
+        display: "" for display in ["Formation"] + list(_MATCH_STAT_TYPE_MAP.values())
+    }
 
 
 def _extract_team_stats(raw_stats: list) -> dict:
@@ -34,8 +60,8 @@ def _extract_team_stats(raw_stats: list) -> dict:
         value = stat.get("value", "0")
         if stat_type == "formationUsed":
             result["Formation"] = "-".join(value)
-        elif stat_type in _STAT_TYPE_MAP:
-            result[_STAT_TYPE_MAP[stat_type]] = value
+        elif stat_type in _MATCH_STAT_TYPE_MAP:
+            result[_MATCH_STAT_TYPE_MAP[stat_type]] = value
     return result
 
 

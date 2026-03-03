@@ -10,7 +10,13 @@ import streamlit as st
 # Stat colour
 
 
-def _stat_color(val: str, other_val: str, is_formation: bool, palette: dict) -> str:
+def _stat_color(
+    val: str,
+    other_val: str,
+    is_formation: bool,
+    palette: dict,
+    lower_is_better: bool = False,
+) -> str:
     """
     Return a highlight color based on comparison between two stat values.
 
@@ -19,6 +25,8 @@ def _stat_color(val: str, other_val: str, is_formation: bool, palette: dict) -> 
         other_val (str): The stat value for the opposing team.
         is_formation (bool): Whether the stat being compared is formation (which should not be compared numerically).
         palette (dict): The active colour palette.
+        lower_is_better (bool): When True, a lower value is coloured green and a
+            higher value red (e.g. fouls committed, cards). Default is False.
 
     Returns:
         str: A hex color code for the stat text.
@@ -26,6 +34,8 @@ def _stat_color(val: str, other_val: str, is_formation: bool, palette: dict) -> 
     if is_formation:
         return palette["alt-text-color"]
     a, b = float(val or 0), float(other_val or 0)
+    if lower_is_better:
+        a, b = b, a
     if a > b:
         return "#23a118"
     if a < b:
