@@ -13,8 +13,11 @@ from components import page_title
 from pages.helpers.match_helpers import (
     _stat_color,
     _render_match_header,
+)
+from pages.helpers.html_tables import (
     _shot_summary_html,
     _PASS_CMAP_HTML,
+    _player_stats_html,
 )
 
 # Set up styles
@@ -68,6 +71,8 @@ if uploaded_files and st.session_state.get("_loaded_files") != uploaded_files:
             "configs": _configs,
             "xg_data": _xg_data,
             "axis_configs": load_axis_configs(_xg_data, _configs),
+            "home_player_stats": load_player_stats(_stats_path, "home"),
+            "away_player_stats": load_player_stats(_stats_path, "away"),
         }
     )
 
@@ -240,14 +245,33 @@ with tab2:
 
             # Player Stats
             with st.expander("Player Stats", expanded=False):
-                # Layout
-                home_gk_col, away_gk_col = st.columns(
-                    2, vertical_alignment="top", border=True
-                )
-                home_players_col, away_players_col = st.columns(
-                    2, vertical_alignment="top", border=True
-                )
-                st.write("Blah")
+                try:
+                    home_player_stats = st.session_state["home_player_stats"]
+                    away_player_stats = st.session_state["away_player_stats"]
+                    home_name_ps = summary_stats["matchInfo"]["homeTeam"]
+                    away_name_ps = summary_stats["matchInfo"]["awayTeam"]
+
+                    home_kit_ps = st.session_state["home_kit"]
+                    away_kit_ps = st.session_state["away_kit"]
+
+                    ps_home_tab, ps_away_tab = st.tabs([home_name_ps, away_name_ps])
+
+                    for tab, kit_ps, player_stats in [
+                        (ps_home_tab, home_kit_ps, home_player_stats),
+                        (ps_away_tab, away_kit_ps, away_player_stats),
+                    ]:
+                        with tab:
+                            st.markdown("**Goalkeeper**")
+                            st.html(
+                                _player_stats_html(kit_ps, player_stats["goalkeeper"])
+                            )
+                            st.markdown("**Outfield**")
+                            st.html(
+                                _player_stats_html(kit_ps, player_stats["outfield"])
+                            )
+
+                except Exception as e:
+                    st.error(f"Error loading player stats: {e}")
 
             st.space("small")
 

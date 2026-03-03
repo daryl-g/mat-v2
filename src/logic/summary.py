@@ -1,6 +1,7 @@
 # Compile a dictionary of match information and stats
 
 # Imports
+import pandas as pd
 from utils import load_json, get_team_id
 
 # Maps Opta stat types to display names. Formation is handled separately.
@@ -23,6 +24,7 @@ _KEEPER_STAT_TYPE_MAP = {
     "goalKicks": "Goal kicks",
 }
 _OUTFIELD_STAT_TYPE_MAP = {
+    "position": "Position",
     "minsPlayed": "Minutes played",
     "goals": "Goals",
     "goalAssist": "Assists",
@@ -44,6 +46,36 @@ _PERIOD_ID_MAP = {1: "1H", 2: "2H", 3: "ET1", 4: "ET2"}
 
 # Maps score keys in the data to summary keys
 _SCORE_KEY_MAP = {"ht": "ht", "ft": "ft", "et": "et", "pen": "penalties"}
+
+
+# Canonical display order for position-side parts (Left < Right < Centre).
+# This ensures "Centre/Right" renders as "RC..." rather than "CR...".
+_SIDE_ORDER: dict[str, int] = {"Left": 0, "Right": 1, "Centre": 2}
+
+
+def _position_abbr(position: str, position_side: str) -> str:
+    """
+    Build a short position abbreviation from positionSide + position.
+
+    Side parts (split by ``"/"``) are sorted into canonical order
+    (Left → Right → Centre) so that e.g. ``"Centre/Right"`` and
+    ``"Right/Centre"`` both produce the same abbreviation ``"RC"``.
+    Each part then contributes its first letter, followed by the first
+    letter of position.
+
+    Examples::
+
+        _position_abbr("Defender", "Left")          -> "LD"
+        _position_abbr("Defender", "Left/Centre")   -> "LCD"
+        _position_abbr("Defender", "Centre/Right")  -> "RCD"
+        _position_abbr("Midfielder", "Centre")      -> "CM"
+        _position_abbr("Forward", "Right/Centre")   -> "RCF"
+    """
+    parts = sorted(
+        (p for p in position_side.split("/") if p),
+        key=lambda p: _SIDE_ORDER.get(p, 99),
+    )
+    return "".join(p[0] for p in parts) + (position[0] if position else "")
 
 
 def _empty_team_stats() -> dict:
@@ -356,15 +388,70 @@ def load_player_stats(stats_path: str, side: str = "home") -> dict:
     """
     Load the player stats for the specified team.
 
+    Players who have not recorded any minutes played are excluded.
+    Results are sorted by minutes played descending (starters first).
+
     Args:
         stats_path (str): Path to the stats JSON file.
         side (str): "home" or "away" to specify which team's player stats to load.
 
     Returns:
-        dict: Mapping of playerId to their stats dictionary.
+        dict: Two keys — ``"goalkeeper"`` and ``"outfield"`` — each containing a
+        list of dicts, one per player, with ``"#"`` and ``"Name"`` followed by
+        the display-name columns from the relevant stat type map.
     """
     if side not in ("home", "away"):
         raise ValueError("Invalid side specified. Must be 'home' or 'away'.")
 
-    # TODO: implement player stats loading
-    pass
+    stats_file = load_json(stats_path)
+    match_info = stats_file.get("matchInfo", {})
+    team_id = get_team_id(match_info, side)
+
+    team_lineup = next(
+        (
+            t
+            for t in stats_file.get("liveData", {}).get("lineUp", [])
+            if t.get("contestantId") == team_id
+        ),
+        None,
+    )
+    if not team_lineup:
+        return {"goalkeeper": [], "outfield": []}
+
+    goalkeepers, outfield = [], []
+    for player in team_lineup.get("player", []):
+        raw = {s["type"]: int(s.get("value", 0)) for s in player.get("stat", [])}
+        if "minsPlayed" not in raw:
+            continue
+
+        is_gk = player.get("position", "") == "Goalkeeper"
+        stat_map = _KEEPER_STAT_TYPE_MAP if is_gk else _OUTFIELD_STAT_TYPE_MAP
+        row = {
+            "#": player.get("shirtNumber", ""),
+            "Name": f"{player.get('shortFirstName', '')} {player.get('shortLastName', '')}".strip(),
+        }
+        for stat_type, display_name in stat_map.items():
+            if stat_type == "position":
+                pos = player.get("position", "")
+                row[display_name] = (
+                    "Sub"
+                    if pos == "Substitute"
+                    else _position_abbr(pos, player.get("positionSide", ""))
+                )
+            else:
+                row[display_name] = raw.get(stat_type, 0)
+
+        (goalkeepers if is_gk else outfield).append(row)
+
+    mins_col = list(_KEEPER_STAT_TYPE_MAP.values())[0]  # "Minutes played"
+    goalkeepers.sort(key=lambda r: r.get(mins_col, 0), reverse=True)
+    outfield.sort(key=lambda r: r.get(mins_col, 0), reverse=True)
+
+    def _to_df(rows: list) -> pd.DataFrame:
+        if not rows:
+            return pd.DataFrame()
+        df = pd.DataFrame(rows)
+        df = df.set_index("#")
+        return df
+
+    return {"goalkeeper": _to_df(goalkeepers), "outfield": _to_df(outfield)}
