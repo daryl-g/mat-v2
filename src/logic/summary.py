@@ -4,6 +4,9 @@
 import pandas as pd
 from utils import load_json, get_team_id
 
+# ---------------------------------------------------------------------------------------------
+# Private helper functions and constants
+
 # Maps Opta stat types to display names. Formation is handled separately.
 _MATCH_STAT_TYPE_MAP = {
     "totalScoringAtt": "Shots attempted",
@@ -52,6 +55,24 @@ _SCORE_KEY_MAP = {"ht": "ht", "ft": "ft", "et": "et", "pen": "penalties"}
 # This ensures "Centre/Right" renders as "RC..." rather than "CR...".
 _SIDE_ORDER: dict[str, int] = {"Left": 0, "Right": 1, "Centre": 2}
 
+# Sort order for player list: position group first, then left-to-right within group.
+_POSITION_RANK: dict[str, int] = {
+    "Goalkeeper": 0,
+    "Defender": 1,
+    "Midfielder": 2,
+    "Striker": 3,
+    "Substitute": 4,
+}
+_SORT_SIDE_ORDER: dict[str, int] = {
+    "Left": 0,
+    "Left/Centre": 1,
+    "Centre/Left": 1,
+    "Centre": 2,
+    "Centre/Right": 3,
+    "Right/Centre": 3,
+    "Right": 4,
+}
+
 
 def _position_abbr(position: str, position_side: str) -> str:
     """
@@ -95,6 +116,18 @@ def _extract_team_stats(raw_stats: list) -> dict:
         elif stat_type in _MATCH_STAT_TYPE_MAP:
             result[_MATCH_STAT_TYPE_MAP[stat_type]] = value
     return result
+
+
+def _to_df(rows: list) -> pd.DataFrame:
+    if not rows:
+        return pd.DataFrame()
+    df = pd.DataFrame(rows)
+    df = df.set_index("#")
+    return df
+
+
+# ---------------------------------------------------------------------------------------------------
+# Main data loading functions
 
 
 def load_summary(file_paths: list) -> dict:
@@ -389,7 +422,8 @@ def load_player_stats(stats_path: str, side: str = "home") -> dict:
     Load the player stats for the specified team.
 
     Players who have not recorded any minutes played are excluded.
-    Results are sorted by minutes played descending (starters first).
+    Results are sorted by position group (GK → Def → Mid → Fwd → Sub) then
+    left-to-right within each group.
 
     Args:
         stats_path (str): Path to the stats JSON file.
@@ -418,12 +452,22 @@ def load_player_stats(stats_path: str, side: str = "home") -> dict:
     if not team_lineup:
         return {"goalkeeper": [], "outfield": []}
 
-    goalkeepers, outfield = [], []
-    for player in team_lineup.get("player", []):
-        raw = {s["type"]: int(s.get("value", 0)) for s in player.get("stat", [])}
-        if "minsPlayed" not in raw:
-            continue
+    # Filter to players who saw game time, then sort by position group → side (L→R), subs last.
+    played = [
+        p
+        for p in team_lineup.get("player", [])
+        if any(s.get("type") == "minsPlayed" for s in p.get("stat", []))
+    ]
+    played.sort(
+        key=lambda p: (
+            _POSITION_RANK.get(p.get("position", ""), 99),
+            _SORT_SIDE_ORDER.get(p.get("positionSide", "") or "", 2),
+        )
+    )
 
+    goalkeepers, outfield = [], []
+    for player in played:
+        raw = {s["type"]: int(s.get("value", 0)) for s in player.get("stat", [])}
         is_gk = player.get("position", "") == "Goalkeeper"
         stat_map = _KEEPER_STAT_TYPE_MAP if is_gk else _OUTFIELD_STAT_TYPE_MAP
         row = {
@@ -442,16 +486,5 @@ def load_player_stats(stats_path: str, side: str = "home") -> dict:
                 row[display_name] = raw.get(stat_type, 0)
 
         (goalkeepers if is_gk else outfield).append(row)
-
-    mins_col = list(_KEEPER_STAT_TYPE_MAP.values())[0]  # "Minutes played"
-    goalkeepers.sort(key=lambda r: r.get(mins_col, 0), reverse=True)
-    outfield.sort(key=lambda r: r.get(mins_col, 0), reverse=True)
-
-    def _to_df(rows: list) -> pd.DataFrame:
-        if not rows:
-            return pd.DataFrame()
-        df = pd.DataFrame(rows)
-        df = df.set_index("#")
-        return df
 
     return {"goalkeeper": _to_df(goalkeepers), "outfield": _to_df(outfield)}
