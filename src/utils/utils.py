@@ -35,19 +35,19 @@ def import_fonts(
         raise ValueError("Unknown font type. Please choose between 'roboto'.")
 
     # Import the fonts from the assets directory
-    robotoRegular = fm.FontProperties(fname=str(_FONTS_DIR / "Roboto-Regular.ttf"))
-    robotoLight = fm.FontProperties(fname=str(_FONTS_DIR / "Roboto-Light.ttf"))
-    robotoBold = fm.FontProperties(fname=str(_FONTS_DIR / "Roboto-Bold.ttf"))
+    roboto_regular = fm.FontProperties(fname=str(_FONTS_DIR / "Roboto-Regular.ttf"))
+    roboto_light = fm.FontProperties(fname=str(_FONTS_DIR / "Roboto-Light.ttf"))
+    roboto_bold = fm.FontProperties(fname=str(_FONTS_DIR / "Roboto-Bold.ttf"))
 
     if which == "roboto":
         if weight == "all":
-            return robotoRegular, robotoLight, robotoBold
+            return roboto_regular, roboto_light, roboto_bold
         elif weight == "regular":
-            return robotoRegular
+            return roboto_regular
         elif weight == "light":
-            return robotoLight
+            return roboto_light
         elif weight == "bold":
-            return robotoBold
+            return roboto_bold
         else:
             raise ValueError(
                 "Unknown font weight. Please choose from 'regular', 'light', 'bold', or 'all' to get all fonts."

@@ -4,7 +4,7 @@
 import streamlit as st
 
 # Custom modules
-from utils import *
+from utils import set_page_title
 from styles import Styles
 from components import page_title
 

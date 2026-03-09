@@ -109,6 +109,55 @@ _PASS_CMAP_HTML = """
 # Columns that should be left-aligned (everything else is right-aligned)
 _LEFT_ALIGN_COLS = {"Name", "Position"}
 
+# Width reserved for the sticky shirt-number column
+_SHIRT_W = "3rem"
+
+_PST_CSS = f"""
+<style>
+  .pst {{ border-collapse: collapse; font-size: 0.8rem; width: max-content; }}
+  .pst th, .pst td {{
+    padding: 0.2rem 0.5rem;
+    white-space: nowrap;
+  }}
+  .pst thead tr {{ border-bottom: 1px solid rgba(128,128,128,0.3); }}
+  .pst tbody tr:nth-child(even) {{ background: rgba(128,128,128,0.05); }}
+  .pst .col-left  {{ text-align: left; }}
+  .pst .col-right {{ text-align: right; }}
+  .pst .sticky-0 {{
+    position: sticky;
+    left: 0;
+    z-index: 2;
+    background: var(--background-color, #d1e5f4);
+  }}
+  .pst .sticky-1 {{
+    position: sticky;
+    left: {_SHIRT_W};
+    z-index: 2;
+    background: var(--background-color, #d1e5f4);
+  }}
+  .pst .shirt-col {{
+    text-align: center;
+    min-width: {_SHIRT_W};
+    width: {_SHIRT_W};
+  }}
+</style>
+"""
+
+
+def _th_align(col: str) -> str:
+    return "left" if col in _LEFT_ALIGN_COLS else "right"
+
+
+def _display_cell(col: str, val) -> str:
+    """Suppress zero numeric values in right-aligned columns; leave strings untouched."""
+    if col not in _LEFT_ALIGN_COLS:
+        try:
+            if float(val) == 0:
+                return ""
+        except (TypeError, ValueError):
+            pass
+    return str(val) if val is not None else ""
+
 
 def _player_stats_html(kit: dict, df) -> str:
     """
@@ -132,72 +181,26 @@ def _player_stats_html(kit: dict, df) -> str:
         )
 
     color = kit["colour1"]
-    columns = list(df.columns)  # first col is "Name"
+    columns = list(df.columns)
 
-    # Width reserved for the sticky # column (content + padding).
-    _SHIRT_W = "3rem"
+    th_cells = "<th class='sticky-0 shirt-col'>#</th>" + "".join(
+        f"<th class='col-{_th_align(col)}{' sticky-1' if col == 'Name' else ''}'>{col}</th>"
+        for col in columns
+    )
 
-    def _display(col: str, val) -> str:
-        """Suppress zero numeric values; leave strings untouched."""
-        if col not in _LEFT_ALIGN_COLS:
-            try:
-                if float(val) == 0:
-                    return ""
-            except (TypeError, ValueError):
-                pass
-        return str(val) if val is not None else ""
-
-    def _th_align(col: str) -> str:
-        return "left" if col in _LEFT_ALIGN_COLS else "right"
-
-    # Header cells — Name is sticky-1, all others normal.
-    th_cells = f"<th class='sticky-0 shirt-col'>#</th>"
-    for col in columns:
-        extra = " sticky-1" if col == "Name" else ""
-        th_cells += f"<th class='col-{_th_align(col)}{extra}'>{col}</th>"
-
-    # Body rows
-    rows_html = ""
-    for idx, row in df.iterrows():
-        shirt_td = (
-            f"<td class='sticky-0 shirt-col' "
-            f"style='color:{color}; font-weight:bold;'>{idx}</td>"
+    rows_html = "".join(
+        "<tr>"
+        f"<td class='sticky-0 shirt-col' style='color:{color}; font-weight:bold;'>{idx}</td>"
+        + "".join(
+            f"<td class='col-{_th_align(col)}{' sticky-1' if col == 'Name' else ''}'>{_display_cell(col, val)}</td>"
+            for col, val in row.items()
         )
-        data_tds = ""
-        for col, val in row.items():
-            extra = " sticky-1" if col == "Name" else ""
-            data_tds += (
-                f"<td class='col-{_th_align(col)}{extra}'>{_display(col, val)}</td>"
-            )
-        rows_html += f"<tr>{shirt_td}{data_tds}</tr>"
+        + "</tr>"
+        for idx, row in df.iterrows()
+    )
 
     return f"""
-    <style>
-      .pst {{ border-collapse: collapse; font-size: 0.8rem; width: max-content; }}
-      .pst th, .pst td {{
-        padding: 0.2rem 0.5rem;
-        white-space: nowrap;
-      }}
-      .pst thead tr {{ border-bottom: 1px solid rgba(128,128,128,0.3); }}
-      .pst tbody tr:nth-child(even) {{ background: rgba(128,128,128,0.05); }}
-      .pst .col-left  {{ text-align: left; }}
-      .pst .col-right {{ text-align: right; }}
-      .pst .sticky-0 {{
-        position: sticky;
-        left: 0;
-        z-index: 2;
-      }}
-      .pst .sticky-1 {{
-        position: sticky;
-        left: {_SHIRT_W};
-        z-index: 2;
-      }}
-      .pst .shirt-col {{
-        text-align: center;
-        min-width: {_SHIRT_W};
-        width: {_SHIRT_W};
-      }}
-    </style>
+    {_PST_CSS}
     <div style="width:100%; overflow-x:auto;">
       <table class="pst">
         <thead><tr>{th_cells}</tr></thead>

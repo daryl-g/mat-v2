@@ -69,7 +69,7 @@ class Pitch:
             **pitch_kwargs,
         }
 
-    def draw(self, figsize: tuple | None = None) -> tuple:
+    def draw(self, figsize: tuple | None = None) -> tuple | None:
         """
         Draw the pitch and return the mplsoccer instance alongside the figure.
 
@@ -223,8 +223,8 @@ class PlotlyPitch:
 
         # Input checking
         if (
-            (type(self.min_max) != dict)
-            or (type(self.specials) != dict)
+            (not isinstance(self.min_max, dict))
+            or (not isinstance(self.specials, dict))
             or (self.min_max is None)
             or (self.specials is None)
         ):
@@ -402,24 +402,23 @@ class PlotlyPitch:
         # Basic Styling
         fig.update_layout(
             plot_bgcolor=self.pitch_bg,
-            xaxis=dict(
-                range=[self.min_max["min_x"], self.min_max["max_x"]],
-                showgrid=False,
-                zeroline=False,
-                showticklabels=False,
-                visible=False,
-            ),
-            yaxis=dict(
-                range=[self.min_max["min_y"], self.min_max["max_y"]],
-                showgrid=False,
-                zeroline=False,
-                showticklabels=False,
-                visible=False,
-            ),
+            xaxis={
+                "range": [self.min_max["min_x"], self.min_max["max_x"]],
+                "showgrid": False,
+                "zeroline": False,
+                "showticklabels": False,
+                "visible": False,
+            },
+            yaxis={
+                "range": [self.min_max["min_y"], self.min_max["max_y"]],
+                "showgrid": False,
+                "zeroline": False,
+                "showticklabels": False,
+                "visible": False,
+            },
             showlegend=False,
             width=self.fig_width,  # This and height below can become inputs for this function
             height=self.fig_height,
-            # margin=dict(l=10, r=10, t=30, b=10),
         )
 
         return fig

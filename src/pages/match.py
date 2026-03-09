@@ -4,10 +4,28 @@
 import streamlit as st
 
 # Custom modules
-from utils import *
-from services import *
-from logic import *
-from vizzes import *
+from utils import set_page_title
+from services import (
+    load_tmp_files,
+    render_opta_wyscout_inputs,
+    render_statsbomb_skillcorner_inputs,
+    render_blend_inputs,
+    render_other_inputs,
+)
+from logic import (
+    load_summary,
+    load_kit_colors,
+    load_shots,
+    load_pass_network,
+    load_axis_configs,
+    load_player_stats,
+    load_players,
+    load_minutes,
+    load_xg_timeline,
+    load_substitutions,
+    summarise_shots,
+)
+from vizzes import plot_formation, plot_xg_timeline, plot_shot_map, plot_pass_network
 from styles import Styles
 from components import page_title
 from pages.helpers.match_helpers import (
@@ -57,7 +75,7 @@ if uploaded_files and st.session_state.get("_loaded_files") != uploaded_files:
     st.session_state.update(
         {
             "_loaded_files": uploaded_files,
-            "summary_stats": load_summary(uploaded_files),
+            "summary_stats": load_summary(_stats_path),
             "stats_path": _stats_path,
             "events_path": _events_path,
             "xgoal_path": _xgoal_path,

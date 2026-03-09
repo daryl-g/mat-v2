@@ -5,6 +5,8 @@ import pandas as pd
 from utils import load_json, get_team_id
 
 # ---------------------------------------------------------------------------
+# Private helper functions and constants
+
 # Opta event type IDs for shots
 _TYPE_BLOCKED = 12
 _TYPE_GOAL = 16
@@ -22,14 +24,40 @@ _GAP_WIDTH = 2
 # Opta qualifier ID for penalty attempts
 _QUAL_PENALTY = 9
 
-
-# ---------------------------------------------------------------------------
-# Private helpers
+# Own goal text
+_OWN_GOAL_SUFFIX = " (OG)"
 
 
 def _parse_qualifiers(qualifiers: list[dict]) -> dict:
     """Return a flat {qualifierId: value} mapping for a single event's qualifiers."""
     return {q["qualifierId"]: q.get("value") for q in qualifiers}
+
+
+def _remap_type(type_id: int, quals: dict) -> int:
+    """Return the normalised shot type: blocked shots take priority over base type."""
+    return _TYPE_BLOCKED if _QUAL_BLOCKED in quals else type_id
+
+
+def _scorer_name(player: str, shot_type: int) -> str:
+    """Return the annotated scorer string for a shot event (load_shots use)."""
+    if shot_type == _TYPE_GOAL:
+        return player
+    if shot_type == _TYPE_OWN_GOAL:
+        return player + _OWN_GOAL_SUFFIX
+    return ""
+
+
+def _scorer_pair(player: str, shot_type: int, is_home: bool) -> tuple[str, str]:
+    """Return (home_scorer, away_scorer) strings for a timeline row."""
+    if shot_type == _TYPE_GOAL:
+        return (player, "") if is_home else ("", player)
+    if shot_type == 26:  # own goal — annotate on the conceding side
+        return (
+            ("", player + _OWN_GOAL_SUFFIX)
+            if is_home
+            else (player + _OWN_GOAL_SUFFIX, "")
+        )
+    return "", ""
 
 
 # ---------------------------------------------------------------------------
@@ -80,24 +108,11 @@ def load_shots(xgoal_path: str, side: str = "home") -> list[dict]:
             continue
 
         quals = _parse_qualifiers(event.get("qualifier", []))
-
         is_own_goal = _QUAL_OWN_GOAL in quals
-        shot_type = event.get("typeId")
-
-        # Remap: blocked shot takes priority over base type
-        if _QUAL_BLOCKED in quals:
-            shot_type = _TYPE_BLOCKED
-
-        # Remap: own goals become a distinct type for downstream rendering
+        shot_type = _remap_type(event.get("typeId"), quals)
         if is_own_goal and shot_type == _TYPE_GOAL:
             shot_type = _TYPE_OWN_GOAL
-
-        if shot_type == _TYPE_GOAL:
-            scorer_name = event.get("playerName", "")
-        elif shot_type == _TYPE_OWN_GOAL:
-            scorer_name = event.get("playerName", "") + " (OG)"
-        else:
-            scorer_name = ""
+        scorer_name = _scorer_name(event.get("playerName", ""), shot_type)
 
         shots.append(
             {
@@ -195,16 +210,10 @@ def load_xg_timeline(xgoal_path: str, configs: dict) -> pd.DataFrame:
         quals = _parse_qualifiers(event.get("qualifier", []))
         is_own_goal = _QUAL_OWN_GOAL in quals
         is_home = event.get("contestantId") == home_id
-
-        shot_type = event.get("typeId")
-        if _QUAL_BLOCKED in quals:
-            shot_type = _TYPE_BLOCKED
-
-        # Own goals use type 26 in the timeline (no xG value)
+        shot_type = _remap_type(event.get("typeId"), quals)
         if is_own_goal:
             shot_type = 26
-            xg_val = 0.0
-            xgot_val = 0.0
+            xg_val, xgot_val = 0.0, 0.0
         else:
             xg_val = float(quals.get(_QUAL_XG) or 0)
             xgot_val = float(quals.get(_QUAL_XGOT) or 0)
@@ -222,18 +231,9 @@ def load_xg_timeline(xgoal_path: str, configs: dict) -> pd.DataFrame:
             home_xg_shot, away_xg_shot = 0.0, 0.0
             home_xgot, away_xgot = 0.0, 0.0
 
-        # Build scorer annotation
-        player = event.get("playerName", "")
-        if shot_type == _TYPE_GOAL:
-            home_scorer, away_scorer = (player, "") if is_home else ("", player)
-        elif shot_type == 26:
-            # Own goal: annotate on the *conceding* team's side
-            if is_home:
-                home_scorer, away_scorer = "", player + " (OG)"
-            else:
-                home_scorer, away_scorer = player + " (OG)", ""
-        else:
-            home_scorer, away_scorer = "", ""
+        home_scorer, away_scorer = _scorer_pair(
+            event.get("playerName", ""), shot_type, is_home
+        )
 
         display_minute = event.get("timeMin", 0) + _period_offset.get(period_id, 0)
 

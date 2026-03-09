@@ -11,6 +11,43 @@ from .scrapers import Scrapers
 
 _VALID_OPTA_SUFFIXES = ("stats.json", "events.json", "xgoal.json", "passmap.json")
 
+_EXPECTED_OPTA_FILES = ["xgoal", "events", "passmap", "stats", "squad"]
+
+
+def _validate_opta_files(uploaded_files: list) -> list:
+    """
+    Validate uploaded Opta files against expected names, emitting st.markdown
+    feedback for each file.  Returns only the files that passed validation.
+    """
+    st.markdown(
+        f"**Validating uploaded files** (Expecting: {', '.join(_EXPECTED_OPTA_FILES)}):"
+    )
+    valid = []
+    for file in uploaded_files:
+        if file.type != "application/json":
+            st.markdown(f"- \u274c {file.name} - Invalid file type (must be JSON)")
+            continue
+        matched = next(
+            (e for e in _EXPECTED_OPTA_FILES if e in file.name.lower()), None
+        )
+        if matched is None:
+            st.markdown(f"- \u274c {file.name} - Unrecognised file!")
+        else:
+            st.markdown(f"- \u2705 {file.name} - {matched} file found")
+            valid.append(file)
+    return valid
+
+
+def _save_tmp_files(files: list) -> list[str]:
+    """Write each file buffer to data/tmp/ and return the list of saved paths."""
+    paths = []
+    for file in files:
+        path = f"data/tmp/{file.name}"
+        with open(path, "wb") as f:
+            f.write(file.getbuffer())
+        paths.append(path)
+    return paths
+
 
 def load_tmp_files() -> list:
     """
@@ -41,7 +78,6 @@ def render_opta_wyscout_inputs(source: str) -> list:
         list: Uploaded files (if file upload selected), or empty list.
     """
     uploaded_file_names = []
-    expected_opta_files = ["xgoal", "events", "passmap", "stats", "squad"]
 
     source_type = st.radio(
         "File source:",
@@ -78,37 +114,8 @@ def render_opta_wyscout_inputs(source: str) -> list:
         if st.button("Finish", key="finish_upload"):
             with st.spinner("Validating files..."):
                 if source == "Opta":
-                    st.markdown(
-                        f"**Validating uploaded files** (Expecting: {', '.join(expected_opta_files)}):"
-                    )
-                    for file in uploaded_files:
-                        # Check file type first
-                        if file.type != "application/json":
-                            st.markdown(
-                                f"- ❌ {file.name} - Invalid file type (must be JSON)"
-                            )
-                            uploaded_files.remove(file)
-                        # Check file name for expected Opta files
-                        if not any(
-                            expected_file in file.name.lower()
-                            for expected_file in expected_opta_files
-                        ):
-                            st.markdown(f"- ❌ {file.name} - Unrecognised file!")
-                            uploaded_files.remove(file)
-                        else:
-                            matched_file = next(
-                                expected_file
-                                for expected_file in expected_opta_files
-                                if expected_file in file.name.lower()
-                            )
-                            st.markdown(f"- ✅ {file.name} - {matched_file} file found")
-
-                # Store the uploaded files in the temp folder
-                for file in uploaded_files:
-                    with open(f"data/tmp/{file.name}", "wb") as f:
-                        f.write(file.getbuffer())
-
-                    uploaded_file_names.append("data/tmp/" + file.name)
+                    uploaded_files = _validate_opta_files(uploaded_files)
+                uploaded_file_names = _save_tmp_files(uploaded_files)
 
     else:  # Load Local Data (for development only - to be removed later)
         st.warning("Loading local data from data/opta folder (for development only).")
@@ -146,9 +153,8 @@ def render_statsbomb_skillcorner_inputs(data_source: str):
         horizontal=True,
     )
 
-    if source_type == "Open Data":
-        pass
-    else:  # File Upload
+    if source_type != "Open Data":
+        # File Upload
         uploaded_files = st.file_uploader(
             f"Upload {data_source} file(s):",
             accept_multiple_files=True,
@@ -181,9 +187,9 @@ def render_blend_inputs(data_sources: list):
     for source in selected_sources:
         st.markdown(f"**Source: {source}**")
         if source in ["Opta", "Wyscout"]:
-            uploaded_files = render_opta_wyscout_inputs()
+            render_opta_wyscout_inputs(source)
         elif source in ["StatsBomb", "SkillCorner"]:
-            source_type = render_statsbomb_skillcorner_inputs(source)
+            render_statsbomb_skillcorner_inputs(source)
 
     return selected_sources
 

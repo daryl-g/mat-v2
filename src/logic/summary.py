@@ -2,54 +2,18 @@
 
 # Imports
 import pandas as pd
-from utils import load_json, get_team_id
+from utils import (
+    load_json,
+    get_team_id,
+    MATCH_STAT_TYPE_MAP,
+    PERIOD_ID_MAP,
+    SCORE_KEY_MAP,
+    KEEPER_STAT_TYPE_MAP,
+    OUTFIELD_STAT_TYPE_MAP,
+)
 
 # ---------------------------------------------------------------------------------------------
 # Private helper functions and constants
-
-# Maps Opta stat types to display names. Formation is handled separately.
-_MATCH_STAT_TYPE_MAP = {
-    "totalScoringAtt": "Shots attempted",
-    "ontargetScoringAtt": "Shots on target",
-    "possessionPercentage": "Possession %",
-    "totalPass": "Passes made",
-    "accuratePass": "Passes completed",
-    "fkFoulLost": "Fouls committed",
-    "totalYellowCard": "Yellow cards",
-    "totalRedCard": "Red cards",
-}
-_KEEPER_STAT_TYPE_MAP = {
-    "minsPlayed": "Minutes played",
-    "goalsConceded": "Goals conceded",
-    "saves": "Saves",
-    "totalPass": "Passes made",
-    "accuratePass": "Passes completed",
-    "goalKicks": "Goal kicks",
-}
-_OUTFIELD_STAT_TYPE_MAP = {
-    "position": "Position",
-    "minsPlayed": "Minutes played",
-    "goals": "Goals",
-    "goalAssist": "Assists",
-    "totalScoringAtt": "Shots attempted",
-    "ontargetScoringAtt": "Shots on target",
-    "totalPass": "Passes made",
-    "accuratePass": "Passes completed",
-    "totalTackle": "Tackles",
-    "wonTackle": "Tackles won",
-    "blockedScoringAtt": "Shots blocked",
-    "totalClearance": "Clearances",
-    "fouls": "Fouls committed",
-    "yellowCard": "Yellow cards",
-    "redCard": "Red cards",
-}
-
-# Maps period IDs to their summary key
-_PERIOD_ID_MAP = {1: "1H", 2: "2H", 3: "ET1", 4: "ET2"}
-
-# Maps score keys in the data to summary keys
-_SCORE_KEY_MAP = {"ht": "ht", "ft": "ft", "et": "et", "pen": "penalties"}
-
 
 # Canonical display order for position-side parts (Left < Right < Centre).
 # This ensures "Centre/Right" renders as "RC..." rather than "CR...".
@@ -72,6 +36,8 @@ _SORT_SIDE_ORDER: dict[str, int] = {
     "Right/Centre": 3,
     "Right": 4,
 }
+
+_SIDE_ERROR_MSG = "Invalid side specified. Must be 'home' or 'away'."
 
 
 def _position_abbr(position: str, position_side: str) -> str:
@@ -100,9 +66,7 @@ def _position_abbr(position: str, position_side: str) -> str:
 
 
 def _empty_team_stats() -> dict:
-    return {
-        display: "" for display in ["Formation"] + list(_MATCH_STAT_TYPE_MAP.values())
-    }
+    return dict.fromkeys(MATCH_STAT_TYPE_MAP.values(), "")
 
 
 def _extract_team_stats(raw_stats: list) -> dict:
@@ -113,120 +77,108 @@ def _extract_team_stats(raw_stats: list) -> dict:
         value = stat.get("value", "0")
         if stat_type == "formationUsed":
             result["Formation"] = "-".join(value)
-        elif stat_type in _MATCH_STAT_TYPE_MAP:
-            result[_MATCH_STAT_TYPE_MAP[stat_type]] = value
+        elif stat_type in MATCH_STAT_TYPE_MAP:
+            result[MATCH_STAT_TYPE_MAP[stat_type]] = value
     return result
 
 
 def _to_df(rows: list) -> pd.DataFrame:
     if not rows:
         return pd.DataFrame()
-    df = pd.DataFrame(rows)
-    df = df.set_index("#")
-    return df
+    return pd.DataFrame(rows).set_index("#")
+
+
+def _player_sort_key(player: dict) -> tuple:
+    return (
+        _POSITION_RANK.get(player.get("position", ""), 99),
+        _SORT_SIDE_ORDER.get(player.get("positionSide", "") or "", 2),
+    )
+
+
+def _build_player_rows(players: list, stat_map: dict) -> list:
+    """Build a list of stat row dicts for a group of players using the given stat map."""
+    rows = []
+    for player in players:
+        raw = {s["type"]: int(s.get("value", 0)) for s in player.get("stat", [])}
+        pos = player.get("position", "")
+        row = {
+            "#": player.get("shirtNumber", ""),
+            "Name": f"{player.get('shortFirstName', '')} {player.get('shortLastName', '')}".strip(),
+        }
+        for stat_type, display_name in stat_map.items():
+            if stat_type == "position":
+                row[display_name] = (
+                    "Sub"
+                    if pos == "Substitute"
+                    else _position_abbr(pos, player.get("positionSide", ""))
+                )
+            else:
+                row[display_name] = raw.get(stat_type, 0)
+        rows.append(row)
+    return rows
 
 
 # ---------------------------------------------------------------------------------------------------
 # Main data loading functions
 
 
-def load_summary(file_paths: list) -> dict:
+def load_summary(stats_path: str) -> dict:
     """
     Retrieve the relevant info and stats for display.
 
     Args:
-        file_paths (list): List of file paths to search through for the relevant data.
+        stats_path (str): Path to the stats JSON file.
 
     Returns:
         dict: The match summary data.
     """
-    summary_dict = {
+    stats_file = load_json(stats_path)
+    match_info = stats_file.get("matchInfo", {})
+    live_data = stats_file.get("liveData", {})
+    match_details = live_data.get("matchDetails", {})
+
+    teams = {t.get("position"): t for t in match_info.get("contestant", [])}
+    home_team = teams.get("home", {})
+    away_team = teams.get("away", {})
+
+    lineup = {t.get("contestantId"): t for t in live_data.get("lineUp", [])}
+    scores_info = match_details.get("scores", {})
+
+    return {
         "matchInfo": {
-            "homeTeam": "",
-            "awayTeam": "",
-            "date": "",
-            "competition": "",
-            "tournamentCalendar": "",
-            "stage": "",
+            "homeTeam": home_team.get("name", ""),
+            "awayTeam": away_team.get("name", ""),
+            "date": match_info.get("localDate", ""),
+            "competition": match_info.get("competition", {}).get("name", ""),
+            "tournamentCalendar": match_info.get("tournamentCalendar", {}).get(
+                "name", ""
+            ),
+            "stage": match_info.get("stage", {}).get("name", ""),
             "periods": {
-                key: {"lengthMin": "", "lengthSec": ""}
-                for key in _PERIOD_ID_MAP.values()
+                PERIOD_ID_MAP[p["id"]]: {
+                    "lengthMin": p.get("lengthMin", ""),
+                    "lengthSec": p.get("lengthSec", ""),
+                }
+                for p in match_details.get("period", [])
+                if p.get("id") in PERIOD_ID_MAP
             },
             "scores": {
-                key: {"home": "", "away": ""} for key in _SCORE_KEY_MAP.values()
+                display: {
+                    "home": scores_info.get(raw, {}).get("home", ""),
+                    "away": scores_info.get(raw, {}).get("away", ""),
+                }
+                for raw, display in SCORE_KEY_MAP.items()
             },
         },
         "matchStats": {
-            "home": _empty_team_stats(),
-            "away": _empty_team_stats(),
+            "home": _extract_team_stats(
+                lineup.get(home_team.get("id", ""), {}).get("stat", [])
+            ),
+            "away": _extract_team_stats(
+                lineup.get(away_team.get("id", ""), {}).get("stat", [])
+            ),
         },
     }
-
-    for file_path in file_paths:
-        if "stats" not in file_path.lower() or not file_path.lower().endswith(".json"):
-            continue
-
-        stats_file = load_json(file_path)
-        match_info = stats_file.get("matchInfo", {})
-        live_data = stats_file.get("liveData", {})
-        match_details = live_data.get("matchDetails", {})
-
-        # Team names and IDs
-        home_team_id, away_team_id = "", ""
-        for team in match_info.get("contestant", []):
-            position = team.get("position")
-            if position == "home":
-                summary_dict["matchInfo"]["homeTeam"] = team.get("name", "")
-                home_team_id = team.get("id", "")
-            elif position == "away":
-                summary_dict["matchInfo"]["awayTeam"] = team.get("name", "")
-                away_team_id = team.get("id", "")
-
-        # Date, competition, stage
-        summary_dict["matchInfo"]["date"] = match_info.get("localDate", "")
-        summary_dict["matchInfo"]["competition"] = match_info.get(
-            "competition", {}
-        ).get("name", "")
-        summary_dict["matchInfo"]["tournamentCalendar"] = match_info.get(
-            "tournamentCalendar", {}
-        ).get("name", "")
-        summary_dict["matchInfo"]["stage"] = match_info.get("stage", {}).get("name", "")
-
-        # Periods
-        for period in match_details.get("period", []):
-            period_key = _PERIOD_ID_MAP.get(period.get("id"))
-            if period_key:
-                summary_dict["matchInfo"]["periods"][period_key]["lengthMin"] = (
-                    period.get("lengthMin", "")
-                )
-                summary_dict["matchInfo"]["periods"][period_key]["lengthSec"] = (
-                    period.get("lengthSec", "")
-                )
-
-        # Scores
-        scores_info = match_details.get("scores", {})
-        for data_key, summary_key in _SCORE_KEY_MAP.items():
-            score = scores_info.get(data_key, {})
-            summary_dict["matchInfo"]["scores"][summary_key]["home"] = score.get(
-                "home", ""
-            )
-            summary_dict["matchInfo"]["scores"][summary_key]["away"] = score.get(
-                "away", ""
-            )
-
-        # Team stats
-        for team in live_data.get("lineUp", []):
-            contestant_id = team.get("contestantId")
-            if contestant_id == home_team_id:
-                summary_dict["matchStats"]["home"] = _extract_team_stats(
-                    team.get("stat", [])
-                )
-            elif contestant_id == away_team_id:
-                summary_dict["matchStats"]["away"] = _extract_team_stats(
-                    team.get("stat", [])
-                )
-
-    return summary_dict
 
 
 def load_formation(stats_path: str, side: str = "home") -> dict:
@@ -241,7 +193,7 @@ def load_formation(stats_path: str, side: str = "home") -> dict:
         dict: The team's formation and the corresponding player positions.
     """
     if side not in ("home", "away"):
-        raise ValueError("Invalid side specified. Must be 'home' or 'away'.")
+        raise ValueError(_SIDE_ERROR_MSG)
 
     stats_file = load_json(stats_path)
     match_info = stats_file.get("matchInfo", {})
@@ -307,7 +259,7 @@ def load_kit_colors(stats_path: str, side: str = "home") -> dict:
             - colour2 (str): Secondary kit color (hex); empty string if not present.
     """
     if side not in ("home", "away"):
-        raise ValueError("Invalid side specified. Must be 'home' or 'away'.")
+        raise ValueError(_SIDE_ERROR_MSG)
 
     stats_file = load_json(stats_path)
     match_info = stats_file.get("matchInfo", {})
@@ -344,7 +296,7 @@ def load_substitutions(stats_path: str, side: str = "home") -> list:
         list[tuple]: List of (player_off_name, player_on_name, time_min_sec) tuples, sorted by time.
     """
     if side not in ("home", "away"):
-        raise ValueError("Invalid side specified. Must be 'home' or 'away'.")
+        raise ValueError(_SIDE_ERROR_MSG)
 
     stats_file = load_json(stats_path)
     match_info = stats_file.get("matchInfo", {})
@@ -383,7 +335,7 @@ def load_players(stats_path: str, side: str = "home", full_name: bool = True) ->
         dict: Mapping of playerId to (shirtNumber, fullName).
     """
     if side not in ("home", "away"):
-        raise ValueError("Invalid side specified. Must be 'home' or 'away'.")
+        raise ValueError(_SIDE_ERROR_MSG)
 
     stats_file = load_json(stats_path)
     match_info = stats_file.get("matchInfo", {})
@@ -435,7 +387,7 @@ def load_player_stats(stats_path: str, side: str = "home") -> dict:
         the display-name columns from the relevant stat type map.
     """
     if side not in ("home", "away"):
-        raise ValueError("Invalid side specified. Must be 'home' or 'away'.")
+        raise ValueError(_SIDE_ERROR_MSG)
 
     stats_file = load_json(stats_path)
     match_info = stats_file.get("matchInfo", {})
@@ -453,38 +405,19 @@ def load_player_stats(stats_path: str, side: str = "home") -> dict:
         return {"goalkeeper": [], "outfield": []}
 
     # Filter to players who saw game time, then sort by position group → side (L→R), subs last.
-    played = [
-        p
-        for p in team_lineup.get("player", [])
-        if any(s.get("type") == "minsPlayed" for s in p.get("stat", []))
-    ]
-    played.sort(
-        key=lambda p: (
-            _POSITION_RANK.get(p.get("position", ""), 99),
-            _SORT_SIDE_ORDER.get(p.get("positionSide", "") or "", 2),
-        )
+    played = sorted(
+        (
+            p
+            for p in team_lineup.get("player", [])
+            if any(s.get("type") == "minsPlayed" for s in p.get("stat", []))
+        ),
+        key=_player_sort_key,
     )
 
-    goalkeepers, outfield = [], []
-    for player in played:
-        raw = {s["type"]: int(s.get("value", 0)) for s in player.get("stat", [])}
-        is_gk = player.get("position", "") == "Goalkeeper"
-        stat_map = _KEEPER_STAT_TYPE_MAP if is_gk else _OUTFIELD_STAT_TYPE_MAP
-        row = {
-            "#": player.get("shirtNumber", ""),
-            "Name": f"{player.get('shortFirstName', '')} {player.get('shortLastName', '')}".strip(),
-        }
-        for stat_type, display_name in stat_map.items():
-            if stat_type == "position":
-                pos = player.get("position", "")
-                row[display_name] = (
-                    "Sub"
-                    if pos == "Substitute"
-                    else _position_abbr(pos, player.get("positionSide", ""))
-                )
-            else:
-                row[display_name] = raw.get(stat_type, 0)
+    goalkeepers = [p for p in played if p.get("position") == "Goalkeeper"]
+    outfield = [p for p in played if p.get("position") != "Goalkeeper"]
 
-        (goalkeepers if is_gk else outfield).append(row)
-
-    return {"goalkeeper": _to_df(goalkeepers), "outfield": _to_df(outfield)}
+    return {
+        "goalkeeper": _to_df(_build_player_rows(goalkeepers, KEEPER_STAT_TYPE_MAP)),
+        "outfield": _to_df(_build_player_rows(outfield, OUTFIELD_STAT_TYPE_MAP)),
+    }
