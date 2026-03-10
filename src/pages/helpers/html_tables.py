@@ -104,6 +104,34 @@ _PASS_CMAP_HTML = """
 """
 
 
+_ALT_TEXT_COLOR = "#3c3e40"
+
+
+def _stat_bar_html(
+    label: str,
+    home_pct: float,
+    away_pct: float,
+    home_color: str,
+    away_color: str,
+) -> str:
+    """Horizontal two-tone bar showing a stat split between home and away."""
+    return (
+        f'<div style="padding:0.3rem 0.5rem;">'
+        f'<p style="text-align:center; font-size:0.7rem; color:grey; margin:0 0 0.25rem;">'
+        f"{label}</p>"
+        f'<div style="height:10px; border-radius:4px; '
+        f"background:linear-gradient(to right, "
+        f"{home_color} {home_pct:.1f}%, {away_color} {home_pct:.1f}%); "
+        f'margin-bottom:0.25rem;"></div>'
+        f'<div style="display:flex; justify-content:space-between; '
+        f'font-size:0.8rem; font-weight:bold; color:{_ALT_TEXT_COLOR};">'
+        f"<span>{home_pct:.0f}%</span>"
+        f"<span>{away_pct:.0f}%</span>"
+        f"</div>"
+        f"</div>\n"
+    )
+
+
 # ─── Player stats table ───────────────────────────────────────────────────────
 
 # Columns that should be left-aligned (everything else is right-aligned)

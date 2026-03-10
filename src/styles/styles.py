@@ -235,9 +235,11 @@ class Styles:
             str: CSS styles for warnings and errors.
         """
 
-        return """
+        alt_text_color = style_dict.get("alt-text-color", "#3c3e40")
+
+        return f"""
         /* Message styling */
         [data-testid="stAlertContentSuccess"], [data-testid="stAlertContentWarning"], [data-testid="stAlertContentError"] {{
-            color: #878700;
+            color: {alt_text_color};
         }}
         """

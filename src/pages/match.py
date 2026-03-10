@@ -24,8 +24,17 @@ from logic import (
     load_xg_timeline,
     load_substitutions,
     summarise_shots,
+    load_possession_versus,
+    load_possession_stats,
+    load_field_tilt,
 )
-from vizzes import plot_formation, plot_xg_timeline, plot_shot_map, plot_pass_network
+from vizzes import (
+    plot_formation,
+    plot_xg_timeline,
+    plot_shot_map,
+    plot_pass_network,
+    plot_possession_heatmap,
+)
 from styles import Styles
 from components import page_title
 from pages.helpers.match_helpers import (
@@ -36,6 +45,7 @@ from pages.helpers.html_tables import (
     _shot_summary_html,
     _PASS_CMAP_HTML,
     _player_stats_html,
+    _stat_bar_html,
 )
 
 # Set up styles
@@ -91,6 +101,9 @@ if uploaded_files and st.session_state.get("_loaded_files") != uploaded_files:
             "axis_configs": load_axis_configs(_xg_data, _configs),
             "home_player_stats": load_player_stats(_stats_path, "home"),
             "away_player_stats": load_player_stats(_stats_path, "away"),
+            "possession_touches": load_possession_versus(_events_path),
+            "possession_stats": load_possession_stats(_stats_path),
+            "field_tilt": load_field_tilt(_events_path),
         }
     )
 
@@ -378,7 +391,72 @@ with tab2:
 
             # Possession
             with st.expander("Possession", expanded=False):
-                st.write("Blah")
+                try:
+                    possession_touches = st.session_state["possession_touches"]
+                    home_kit_pos = st.session_state["home_kit"]
+                    away_kit_pos = st.session_state["away_kit"]
+                    home_name_pos = summary_stats["matchInfo"]["homeTeam"]
+                    away_name_pos = summary_stats["matchInfo"]["awayTeam"]
+
+                    # Layout
+                    overview_col, final_third_col = st.columns(
+                        2, vertical_alignment="top", border=True
+                    )
+                    with overview_col:
+                        home_c = home_kit_pos["colour1"]
+                        away_c = away_kit_pos["colour1"]
+                        possession_stats = st.session_state["possession_stats"]
+                        field_tilt = st.session_state["field_tilt"]
+                        st.html(
+                            f"""
+                            <div style="display:flex; flex-wrap:wrap; justify-content:center;
+                                        align-items:center; gap:0.6rem; font-size:0.85rem;
+                                        padding:0.4rem 0;">
+                                <span style="display:flex; align-items:center; gap:0.4rem;">
+                                    <span style="display:inline-block; width:12px; height:12px;
+                                                 background:{home_c}; border-radius:3px;"></span>
+                                    <b>{home_name_pos}</b>&nbsp;&ge;55%
+                                </span>
+                                <span style="display:flex; align-items:center; gap:0.4rem;">
+                                    <span style="display:inline-block; width:12px; height:12px;
+                                                 background:#d1e5f4; border-radius:3px;"></span>
+                                    <b>Contested</b>
+                                </span>
+                                <span style="display:flex; align-items:center; gap:0.4rem;">
+                                    <span style="display:inline-block; width:12px; height:12px;
+                                                 background:{away_c}; border-radius:3px;"></span>
+                                    <b>{away_name_pos}</b>&nbsp;&ge;55%
+                                </span>
+                            </div>
+                            """
+                        )
+                        st.html(
+                            _stat_bar_html(
+                                "Possession",
+                                possession_stats["home"],
+                                possession_stats["away"],
+                                home_c,
+                                away_c,
+                            )
+                        )
+                        st.pyplot(
+                            plot_possession_heatmap(
+                                possession_touches,
+                                home_kit_pos,
+                                away_kit_pos,
+                            )
+                        )
+                        st.html(
+                            _stat_bar_html(
+                                "Field Tilt",
+                                field_tilt["home"] * 100,
+                                field_tilt["away"] * 100,
+                                home_c,
+                                away_c,
+                            )
+                        )
+                except Exception as e:
+                    st.error(f"Error plotting Possession: {e}")
 
 
 with tab3:

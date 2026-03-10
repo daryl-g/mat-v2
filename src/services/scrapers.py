@@ -94,15 +94,14 @@ class Scrapers:
             )
             return
 
-        logger.info(
-            f"Coverage tier contains event data: {coverage_tier}. Scraping starts..."
-        )
-
         home_team_short = coverage_tier_info["home_team_short"]
         away_team_short = coverage_tier_info["away_team_short"]
         prefix = f"data/tmp/{home_team_short}_{away_team_short}"
 
         with st.spinner("Scraping Opta data..."):
+            # Add extra buffer for the first request already made (match stats)
+            sleep(60)
+
             for i, (endpoint, suffix) in enumerate(list(opta_endpoints.items())[1:]):
                 url = opta_urls[i + 1]
                 response = self._session.get(url, timeout=self._REQUEST_TIMEOUT)

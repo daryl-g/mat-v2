@@ -2,6 +2,7 @@
 
 # Imports
 import copy
+import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.colors import LinearSegmentedColormap
 
@@ -621,4 +622,69 @@ def plot_pass_network(network: dict, kit: dict, **pitch_overrides) -> plt.Figure
 
     fig.tight_layout(pad=0)
 
+    return fig
+
+
+def plot_possession_heatmap(
+    touches: dict,
+    home_kit: dict,
+    away_kit: dict,
+) -> plt.Figure:
+    """
+    Plot a full-pitch diverging possession dominance heatmap.
+
+    Each grid cell is coloured on a continuous scale between the away colour
+    (away dominant) and the home colour (home dominant), with a neutral grey
+    midpoint where possession is even.  Cells where neither team reaches the
+    55% dominance threshold, or with no touches from either team, are set to
+    the neutral midpoint.
+
+    Args:
+        touches (dict): Dict from load_possession_versus(), containing
+            ``"home"`` and ``"away"`` keys each with ``"x"``/``"y"`` lists.
+        home_kit (dict): Home kit colours, e.g. {"colour1": "#hex", "colour2": "#hex"}.
+        away_kit (dict): Away kit colours.
+
+    Returns:
+        plt.Figure: The matplotlib figure containing the heatmap.
+    """
+    home_color = home_kit["colour1"]
+    away_color = away_kit["colour1"]
+
+    cmap = LinearSegmentedColormap.from_list("dom", [away_color, "#d1e5f4", home_color])
+
+    pitch, fig, ax = PitchPreset(
+        vertical=False,
+        pitch_type="opta",
+    ).draw(figsize=(8, 5))
+    fig.set_facecolor("none")
+    ax.set_facecolor("none")
+
+    home_xs = touches["home"]["x"]
+    home_ys = touches["home"]["y"]
+    away_xs = touches["away"]["x"]
+    away_ys = touches["away"]["y"]
+
+    # Bin touches into a grid for each team using the same bin edges
+    bin_home = pitch.bin_statistic(home_xs, home_ys, statistic="count", bins=(6, 5))
+    bin_away = pitch.bin_statistic(away_xs, away_ys, statistic="count", bins=(6, 5))
+
+    home_counts = bin_home["statistic"].astype(float)
+    away_counts = bin_away["statistic"].astype(float)
+    total = home_counts + away_counts
+
+    # Ratio: 1.0 = fully home, 0.0 = fully away, 0.5 = neutral
+    # np.divide with `where` skips zero-denominator cells to avoid RuntimeWarning
+    ratio = np.full_like(total, 0.5)
+    np.divide(home_counts, total, out=ratio, where=total > 0)
+    # Snap cells where neither team reaches the 55% dominance threshold to neutral
+    ratio = np.where((ratio > 0.45) & (ratio < 0.55), 0.5, ratio)
+
+    # Render via the home bin_statistic structure (shares bin edges/grid)
+    bin_home["statistic"] = ratio
+    pitch.heatmap(
+        bin_home, ax=ax, cmap=cmap, vmin=0, vmax=1, edgecolors="none", alpha=0.75
+    )
+
+    fig.tight_layout(pad=0.5)
     return fig
