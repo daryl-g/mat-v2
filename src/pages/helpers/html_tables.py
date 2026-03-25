@@ -107,6 +107,119 @@ _PASS_CMAP_HTML = """
 _ALT_TEXT_COLOR = "#3c3e40"
 
 
+# ─── Defensive actions summary table ─────────────────────────────────────────
+
+# Rows: (HTML symbol, label, lookup key)
+# Non-split types use the integer typeId as key.
+# Tackles use a (typeId, outcome) tuple: (7, 1) = won, (7, 0) = lost.
+_DEF_ACTION_ROWS = [
+    ("&#9679;",  "Successful take-on challenge",         3),
+    ("&#10005;", "Foul committed",                       4),
+    ("&#9632;",  "Tackle won",                          (7, 1)),
+    ("&#9633;",  "Tackle lost",                         (7, 0)),
+    ("&#9650;",  "Interception",                        8),
+    ("&#9670;",  "Clearance",                           45),
+    ("&#215;",   "Dispossessed",                        50),
+    ("&#11040;", "Challenge/Block",                     54),
+]
+
+
+def _defensive_summary_html(kit: dict, actions: dict) -> str:
+    """HTML summary table for defensive actions, mirroring the shot summary style."""
+    color = kit["colour1"]
+
+    # Build a count dict keyed by int typeId, except tackles use (7, outcome)
+    action_counts: dict = {}
+    for tid, oc in zip(actions.get("type_id", []), actions.get("outcome", [])):
+        key = (tid, oc) if tid == 7 else tid
+        action_counts[key] = action_counts.get(key, 0) + 1
+
+    # Average defensive height
+    xs = actions.get("x", [])
+    avg_height_html = ""
+    if xs:
+        avg_x = sum(xs) / len(xs)
+        avg_height_html = (
+            f"<p style=\"text-align:center; font-size:0.8rem; color:grey; margin:0 0 0.4rem;\">"
+            f"Avg. defensive height: <b style='color:{color};'>{avg_x:.1f}</b></p>"
+        )
+
+    rows_html = "".join(
+        f"""
+        <tr>
+            <td style="text-align:center; padding:0.2rem 0.5rem; color:{color}; font-size:1rem;">{sym}</td>
+            <td style="padding:0.2rem 0.5rem;">{label}</td>
+            <td style="text-align:right; padding:0.2rem 0.5rem;">{action_counts.get(key, 0)}</td>
+        </tr>
+        """
+        for sym, label, key in _DEF_ACTION_ROWS
+        if action_counts.get(key, 0) > 0
+    )
+    total = len(actions.get("type_id", []))
+    return f"""
+    {avg_height_html}
+    <table style="width:100%; border-collapse:collapse; font-size:0.85rem;">
+        <thead>
+            <tr style="border-bottom:1px solid rgba(128,128,128,0.3);">
+                <th style="padding:0.2rem 0.5rem;"></th>
+                <th style="text-align:left; padding:0.2rem 0.5rem;">Action</th>
+                <th style="text-align:right; padding:0.2rem 0.5rem;">Count</th>
+            </tr>
+        </thead>
+        <tbody>
+            {rows_html}
+            <tr style="border-top:1px solid rgba(128,128,128,0.3); font-weight:bold;">
+                <td></td>
+                <td style="padding:0.2rem 0.5rem;">Total</td>
+                <td style="text-align:right; padding:0.2rem 0.5rem;">{total}</td>
+            </tr>
+        </tbody>
+    </table>
+    """
+
+
+def _high_turnover_summary_html(kit: dict, turnovers: dict) -> str:
+    """HTML summary table for high turnovers — total, led to shot, led to goal."""
+    color = kit["colour1"]
+    total = len(turnovers.get("x", []))
+    shots = sum(turnovers.get("led_to_shot", []))
+    goals = sum(turnovers.get("led_to_goal", []))
+    return f"""
+    <table style="width:100%; border-collapse:collapse; font-size:0.85rem;">
+        <thead>
+            <tr style="border-bottom:1px solid rgba(128,128,128,0.3);">
+                <th style="padding:0.2rem 0.5rem;"></th>
+                <th style="text-align:left; padding:0.2rem 0.5rem;">Turnover outcome</th>
+                <th style="text-align:right; padding:0.2rem 0.5rem;">Count</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td style="text-align:center; padding:0.2rem 0.5rem; color:{color};">&#9679;</td>
+                <td style="padding:0.2rem 0.5rem;">No shot</td>
+                <td style="text-align:right; padding:0.2rem 0.5rem;">{total - shots}</td>
+            </tr>
+            <tr>
+                <td style="text-align:center; padding:0.2rem 0.5rem; color:{color}; font-size:1.1rem;">&#9679;</td>
+                <td style="padding:0.2rem 0.5rem;">Led to shot</td>
+                <td style="text-align:right; padding:0.2rem 0.5rem;">{shots}</td>
+            </tr>
+            <tr>
+                <td style="text-align:center; padding:0.2rem 0.5rem; color:{color}; font-size:1.1rem;">&#9733;</td>
+                <td style="padding:0.2rem 0.5rem;">Led to goal</td>
+                <td style="text-align:right; padding:0.2rem 0.5rem;">{goals}</td>
+            </tr>
+            <tr style="border-top:1px solid rgba(128,128,128,0.3); font-weight:bold;">
+                <td></td>
+                <td style="padding:0.2rem 0.5rem;">Total</td>
+                <td style="text-align:right; padding:0.2rem 0.5rem;">{total}</td>
+            </tr>
+        </tbody>
+    </table>
+    <p style="text-align:center; font-size:0.7rem; color:grey; margin-top:0.3rem;">Possession won within 40m of opposition goal</p>
+    """
+
+
 def _stat_bar_html(
     label: str,
     home_pct: float,

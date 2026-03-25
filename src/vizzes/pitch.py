@@ -69,13 +69,17 @@ class Pitch:
             **pitch_kwargs,
         }
 
-    def draw(self, figsize: tuple | None = None) -> tuple | None:
+    def draw(self, figsize: tuple | None = None, ax=None) -> tuple | None:
         """
         Draw the pitch and return the mplsoccer instance alongside the figure.
 
         Args:
             figsize (tuple | None): Optional ``(width, height)`` in inches
-                forwarded to mplsoccer's draw call.
+                forwarded to mplsoccer's draw call.  Ignored when ``ax`` is
+                provided.
+            ax: An existing matplotlib ``Axes`` to draw the pitch on.  When
+                supplied, no new figure is created and ``fig`` in the returned
+                tuple is ``None``.
 
         Returns:
             tuple: ``(mpl_pitch, fig, ax)`` where ``mpl_pitch`` is the
@@ -89,6 +93,9 @@ class Pitch:
 
         pitch_cls = MplVerticalPitch if self.vertical else MplPitch
         mpl_pitch = pitch_cls(**self._pitch_kwargs)
+        if ax is not None:
+            mpl_pitch.draw(ax=ax)
+            return mpl_pitch, None, ax
         draw_kwargs = {"figsize": figsize} if figsize is not None else {}
         fig, ax = mpl_pitch.draw(**draw_kwargs)
         return mpl_pitch, fig, ax

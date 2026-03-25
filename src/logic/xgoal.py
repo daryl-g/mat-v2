@@ -8,7 +8,7 @@ from utils import load_json, get_team_id
 # Private helper functions and constants
 
 # Opta event type IDs for shots
-_TYPE_BLOCKED = 12
+_TYPE_BLOCKED = 10
 _TYPE_GOAL = 16
 _TYPE_OWN_GOAL = 17  # remapped internally when own-goal qualifier is found
 
@@ -16,7 +16,8 @@ _TYPE_OWN_GOAL = 17  # remapped internally when own-goal qualifier is found
 _QUAL_OWN_GOAL = 28
 _QUAL_XG = 321
 _QUAL_XGOT = 322
-_QUAL_BLOCKED = 82
+_QUAL_BLOCKED = 82         # blocked by any player
+_QUAL_BLOCKED_OUTFIELD = 94  # specifically blocked by an outfield player
 
 # Default gap width (minutes) inserted between halves in the xG timeline
 _GAP_WIDTH = 2
@@ -34,8 +35,12 @@ def _parse_qualifiers(qualifiers: list[dict]) -> dict:
 
 
 def _remap_type(type_id: int, quals: dict) -> int:
-    """Return the normalised shot type: blocked shots take priority over base type."""
-    return _TYPE_BLOCKED if _QUAL_BLOCKED in quals else type_id
+    """Return the normalised shot type: blocked shots are typeId 10 with qualifier 82 or 94."""
+    if type_id == _TYPE_BLOCKED and (
+        _QUAL_BLOCKED in quals or _QUAL_BLOCKED_OUTFIELD in quals
+    ):
+        return _TYPE_BLOCKED
+    return type_id
 
 
 def _scorer_name(player: str, shot_type: int) -> str:
@@ -80,8 +85,8 @@ def load_shots(xgoal_path: str, side: str = "home") -> list[dict]:
             - period_id  (int)  : Period the shot was taken in (1–4).
             - time_min   (int)  : Actual minute the shot was taken.
             - shot_type  (int)  : Normalised Opta type ID:
-                                  12 = blocked, 14 = post, 15 = on target,
-                                  16 = goal, 17 = own goal.
+                                  10 = blocked, 13 = off target, 14 = post,
+                                  15 = on target, 16 = goal, 17 = own goal.
             - is_own_goal (bool): True when the own-goal qualifier (28) is present.
             - player_name (str) : Name of the player who took the shot.
             - scorer_name (str) : Annotated name for goal events only;
@@ -160,7 +165,7 @@ def load_xg_timeline(xgoal_path: str, configs: dict) -> pd.DataFrame:
             - away_xg       (float): Running cumulative xG — away team
             - home_xgot     (float): xGOT of this shot (home); 0 if away shot
             - away_xgot     (float): xGOT of this shot (away); 0 if home shot
-            - shot_type     (int)  : Normalised type (12/14/15/16/26)
+            - shot_type     (int)  : Normalised type (10/13/14/15/16/26)
     """
     xgoal_data = load_json(xgoal_path)
     match_info = xgoal_data.get("matchInfo", {})

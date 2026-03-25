@@ -5,7 +5,6 @@ import copy
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.colors import LinearSegmentedColormap
-
 # Custom modules
 from logic.summary import load_formation
 from utils import import_fonts
@@ -48,7 +47,7 @@ def _scatter_shots(
     Returns:
         dict: Outcome counts — goals, on_target, post, blocked, off_target.
     """
-    _MARKERS = {16: "o", 17: "o", 15: "^", 14: "s", 12: "D"}
+    _MARKERS = {16: "o", 17: "o", 15: "^", 14: "s", 10: "D"}
     counts = {"goals": 0, "on_target": 0, "post": 0, "blocked": 0, "off_target": 0}
     edge_color = edge or "black"
 
@@ -67,7 +66,7 @@ def _scatter_shots(
             counts["on_target"] += 1
         elif t == 14:
             counts["post"] += 1
-        elif t == 12:
+        elif t == 10:
             counts["blocked"] += 1
         else:
             counts["off_target"] += 1
@@ -686,5 +685,346 @@ def plot_possession_heatmap(
         bin_home, ax=ax, cmap=cmap, vmin=0, vmax=1, edgecolors="none", alpha=0.75
     )
 
+    fig.tight_layout(pad=0.5)
+    return fig
+
+
+def plot_defensive_actions(
+    actions: dict,
+    kit: dict,
+    **pitch_overrides,
+) -> plt.Figure:
+    """
+    Plot defensive action locations for a single team on a vertical pitch,
+    using distinct markers for each action type.
+
+    Marker scheme:
+        - typeId  3 (take-on won)      — circle   ``o``
+        - typeId  4 (foul)             — cross     ``X``
+        - typeId  7 (tackle)           — square    ``s``
+        - typeId  8 (interception)     — triangle  ``^``
+        - typeId 45 (clearance)        — diamond   ``D``
+        - typeId 50 (dispossessed)     — thin-X    ``x``
+        - typeId 54 (challenge/block)  — pentagon  ``p``
+
+    Args:
+        actions (dict): Dict with ``"x"``, ``"y"``, and ``"type_id"`` keys
+            for one team, as returned by load_defensive_actions().
+        kit (dict): Kit colors, e.g. {"colour1": "#hex", "colour2": "#hex"}.
+        **pitch_overrides: Optional mplsoccer VerticalPitch kwargs forwarded to
+            the pitch preset.
+
+    Returns:
+        plt.Figure: The matplotlib figure containing the defensive action scatter.
+    """
+    _MARKER_MAP: dict[int, str] = {
+        3: "o",
+        4: "X",
+        7: "s",
+        8: "^",
+        45: "D",
+        50: "x",
+        54: "p",
+    }
+
+    fill = kit["colour1"]
+    edge = kit.get("colour2") or "white"
+
+    pitch, fig, ax = PitchPreset(
+        pitch_type="opta",
+        **pitch_overrides,
+    ).draw(figsize=(5, 6))
+
+    xs = actions.get("x", [])
+    ys = actions.get("y", [])
+    type_ids = actions.get("type_id", [])
+
+    # Group by type_id so each type gets a single scatter call (one legend entry each)
+    grouped: dict[int, tuple[list, list]] = {}
+    for x, y, tid in zip(xs, ys, type_ids):
+        bucket = grouped.setdefault(tid, ([], []))
+        bucket[0].append(x)
+        bucket[1].append(y)
+
+    for tid, (gx, gy) in grouped.items():
+        pitch.scatter(
+            gx,
+            gy,
+            s=30,
+            marker=_MARKER_MAP.get(tid, "o"),
+            color=fill,
+            edgecolors=edge,
+            linewidths=0.8,
+            alpha=0.7,
+            zorder=2,
+            ax=ax,
+        )
+
+    # Average height line
+    if xs:
+        avg_x = sum(xs) / len(xs)
+        pitch.lines(
+            avg_x, 0, avg_x, 100,
+            lw=1.5, linestyle="--", color=fill, alpha=0.5, zorder=3, ax=ax,
+        )
+        label_font = copy.copy(robotoRegular)
+        label_font.set_size(7)
+        pitch.annotate(
+            f"Avg: {avg_x:.1f}",
+            (avg_x + 1.5, 97),
+            ha="right",
+            va="bottom",
+            fontproperties=label_font,
+            color=fill,
+            zorder=4,
+            ax=ax,
+        )
+
+    fig.set_facecolor("none")
+    ax.set_facecolor("none")
+    fig.tight_layout(pad=0.5)
+    return fig
+
+
+def plot_zone_entries(
+    entries: dict,
+    kit: dict,
+    **pitch_overrides,
+) -> plt.Figure:
+    """
+    Plot entry point locations for a single team on a vertical pitch with
+    positional zone lines.
+
+    Intended for both final-third entries and box entries.
+
+    Args:
+        entries (dict): Dict with ``"x"`` and ``"y"`` keys for one team,
+            as returned by load_final_third_entries() or load_box_entries().
+        kit (dict): Kit colors, e.g. {"colour1": "#hex", "colour2": "#hex"}.
+        **pitch_overrides: Optional mplsoccer VerticalPitch kwargs forwarded
+            to the pitch preset.
+
+    Returns:
+        plt.Figure: The matplotlib figure containing the entry scatter.
+    """
+    fill = kit["colour1"]
+    edge = kit.get("colour2") or "white"
+
+    pitch, fig, ax = PitchPreset(
+        pitch_type="opta",
+        half=True,
+        positional=True,
+        positional_color="grey",
+        positional_alpha=0.3,
+        **pitch_overrides,
+    ).draw(figsize=(5, 6))
+
+    xs = entries.get("x", [])
+    ys = entries.get("y", [])
+    start_xs = entries.get("start_x", [])
+    start_ys = entries.get("start_y", [])
+    type_ids = entries.get("type_id", [])
+
+    pass_sx: list = []
+    pass_sy: list = []
+    pass_ex: list = []
+    pass_ey: list = []
+    drib_x: list = []
+    drib_y: list = []
+
+    for sx, sy, ex, ey, tid in zip(start_xs, start_ys, xs, ys, type_ids):
+        if tid == 1:
+            pass_sx.append(sx)
+            pass_sy.append(sy)
+            pass_ex.append(ex)
+            pass_ey.append(ey)
+        else:
+            drib_x.append(ex)
+            drib_y.append(ey)
+
+    if pass_sx:
+        pitch.arrows(
+            pass_sx, pass_sy, pass_ex, pass_ey,
+            width=1.5, headwidth=3, headlength=2, headaxislength=2,
+            color=fill, alpha=0.7, zorder=2, ax=ax,
+        )
+
+    if drib_x:
+        pitch.scatter(
+            drib_x, drib_y,
+            s=25, color=fill, edgecolors=edge, linewidths=0.8, alpha=0.75,
+            zorder=2, ax=ax,
+        )
+
+    fig.set_facecolor("none")
+    ax.set_facecolor("none")
+    fig.tight_layout(pad=0.5)
+    return fig
+
+
+# ─── Corner analysis ──────────────────────────────────────────────────────────
+
+# Subplot grid definition: (data_key, display_title)
+_CORNER_SUBPLOTS: tuple[tuple[str, str], ...] = (
+    ("left_inswing",   "Left Inswinging"),
+    ("right_inswing",  "Right Inswinging"),
+    ("left_outswing",  "Left Outswinging"),
+    ("right_outswing", "Right Outswinging"),
+)
+
+
+def plot_corners(
+    corners: dict,
+    kit: dict,
+    **_,
+) -> plt.Figure:
+    """
+    Plot corner kick delivery maps for a single team in a 2×2 subplot grid.
+
+    Each panel shows a horizontal half-pitch (the attacking end, goal at left)
+    with lines from the corner flag to the delivery end-point and a scatter
+    dot at the landing location.  The four panels correspond to:
+    left inswing, right inswing, left outswing, right outswing.
+
+    Args:
+        corners (dict): One team's corner data as returned by
+            ``load_corners()``, e.g. ``corners["home"]``.
+        kit (dict): Kit colours, e.g. ``{"colour1": "#hex", "colour2": "#hex"}``.
+
+    Returns:
+        plt.Figure: The matplotlib figure.
+    """
+    fill = kit["colour1"]
+    edge = kit.get("colour2") or "white"
+
+    # Horizontal half-pitch: goal at x=0, corner flags at (≈0, 0/100)
+    # Coordinates passed to the plot have x already flipped (100 − stored_x)
+    # so that the stored value of x≈100 (attacking end) maps to plot_x≈0.
+    _pitch_preset = PitchPreset(
+        vertical=False,
+        pitch_type="opta",
+        half=True,
+    )
+
+    fig, axes = plt.subplots(2, 2, figsize=(9, 6.5))
+
+    title_font = copy.copy(robotoRegular)
+    title_font.set_size(8)
+    count_font = copy.copy(robotoLight)
+    count_font.set_size(7)
+
+    for ax, (key, title) in zip(axes.flat, _CORNER_SUBPLOTS):
+        pitch, _, _ = _pitch_preset.draw(ax=ax)
+        ax.set_facecolor("none")
+
+        data = corners.get(key, {"x": [], "y": [], "end_x": [], "end_y": []})
+        xs = data.get("x", [])
+        ys = data.get("y", [])
+        end_xs = data.get("end_x", [])
+        end_ys = data.get("end_y", [])
+
+        # Flip x so corner flags (stored x≈100) appear at x≈0 on the half-pitch
+        px  = [100.0 - v for v in xs]
+        pex = [100.0 - v for v in end_xs]
+
+        if px:
+            pitch.lines(
+                px, ys, pex, end_ys,
+                lw=0.9, color=fill, alpha=0.45, zorder=1, ax=ax,
+            )
+            pitch.scatter(
+                pex, end_ys,
+                s=35, color=fill, edgecolors=edge, linewidths=0.6,
+                alpha=0.8, zorder=2, ax=ax,
+            )
+
+        n = len(px)
+        ax.set_title(f"{title} (n={n})", fontproperties=title_font, pad=3)
+
+    fig.set_facecolor("none")
+    fig.tight_layout(pad=1.0)
+    return fig
+
+
+def plot_high_turnovers(
+    turnovers: dict,
+    kit: dict,
+    **pitch_overrides,
+) -> plt.Figure:
+    """
+    Plot high turnover locations for a single team on a vertical pitch.
+
+    Plain turnovers are shown as small dim dots. Turnovers that led to a shot
+    within 15 seconds are shown as larger, more opaque dots. Turnovers that
+    led to a goal are shown as stars.
+
+    Args:
+        turnovers (dict): Dict with ``"x"``, ``"y"``, ``"led_to_shot"``,
+            and ``"led_to_goal"`` lists for one team, as returned by
+            ``load_high_turnovers()``.
+        kit (dict): Kit colors, e.g. ``{"colour1": "#hex", "colour2": "#hex"}``.
+        **pitch_overrides: Optional VerticalPitch kwargs forwarded to the preset.
+
+    Returns:
+        plt.Figure: The matplotlib figure.
+    """
+    fill = kit["colour1"]
+    edge = kit.get("colour2") or "white"
+
+    pitch, fig, ax = PitchPreset(
+        pitch_type="opta",
+        half=True,
+        positional=True,
+        positional_color="grey",
+        positional_alpha=0.3,
+        **pitch_overrides,
+    ).draw(figsize=(5, 6))
+
+    xs = turnovers.get("x", [])
+    ys = turnovers.get("y", [])
+    led_to_shot = turnovers.get("led_to_shot", [])
+    led_to_goal = turnovers.get("led_to_goal", [])
+
+    plain_x, plain_y = [], []
+    shot_x, shot_y = [], []
+    goal_x, goal_y = [], []
+
+    for x, y, shot, goal in zip(xs, ys, led_to_shot, led_to_goal):
+        if goal:
+            goal_x.append(x)
+            goal_y.append(y)
+        elif shot:
+            shot_x.append(x)
+            shot_y.append(y)
+        else:
+            plain_x.append(x)
+            plain_y.append(y)
+
+    # Layer 1 – plain turnovers (small, dim)
+    if plain_x:
+        pitch.scatter(
+            plain_x, plain_y,
+            s=25, color=fill, edgecolors=edge, linewidths=0.6,
+            alpha=0.35, zorder=2, ax=ax,
+        )
+
+    # Layer 2 – led to a shot (larger, more opaque)
+    if shot_x:
+        pitch.scatter(
+            shot_x, shot_y,
+            s=55, color=fill, edgecolors=edge, linewidths=0.8,
+            alpha=0.8, zorder=3, ax=ax,
+        )
+
+    # Layer 3 – led to a goal (star, fully opaque)
+    if goal_x:
+        pitch.scatter(
+            goal_x, goal_y,
+            s=120, marker="*", color=fill, edgecolors=edge, linewidths=0.8,
+            alpha=1.0, zorder=4, ax=ax,
+        )
+
+    fig.set_facecolor("none")
+    ax.set_facecolor("none")
     fig.tight_layout(pad=0.5)
     return fig

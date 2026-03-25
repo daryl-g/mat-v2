@@ -27,6 +27,11 @@ from logic import (
     load_possession_versus,
     load_possession_stats,
     load_field_tilt,
+    load_final_third_entries,
+    load_box_entries,
+    load_defensive_actions,
+    load_high_turnovers,
+    load_corners,
 )
 from vizzes import (
     plot_formation,
@@ -34,6 +39,10 @@ from vizzes import (
     plot_shot_map,
     plot_pass_network,
     plot_possession_heatmap,
+    plot_defensive_actions,
+    plot_zone_entries,
+    plot_high_turnovers,
+    plot_corners,
 )
 from styles import Styles
 from components import page_title
@@ -46,6 +55,8 @@ from pages.helpers.html_tables import (
     _PASS_CMAP_HTML,
     _player_stats_html,
     _stat_bar_html,
+    _defensive_summary_html,
+    _high_turnover_summary_html,
 )
 
 # Set up styles
@@ -104,6 +115,11 @@ if uploaded_files and st.session_state.get("_loaded_files") != uploaded_files:
             "possession_touches": load_possession_versus(_events_path),
             "possession_stats": load_possession_stats(_stats_path),
             "field_tilt": load_field_tilt(_events_path),
+            "final_third_entries": load_final_third_entries(_events_path),
+            "box_entries": load_box_entries(_events_path),
+            "defensive_actions": load_defensive_actions(_events_path),
+            "high_turnovers": load_high_turnovers(_events_path),
+            "corners": load_corners(_events_path),
         }
     )
 
@@ -397,12 +413,20 @@ with tab2:
                     away_kit_pos = st.session_state["away_kit"]
                     home_name_pos = summary_stats["matchInfo"]["homeTeam"]
                     away_name_pos = summary_stats["matchInfo"]["awayTeam"]
+                    ft_entries = st.session_state["final_third_entries"]
+                    bx_entries = st.session_state["box_entries"]
 
                     # Layout
-                    overview_col, final_third_col = st.columns(
+                    territory_dominance = st.container(
+                        key="territory_dominance",
+                        border=True,
+                        horizontal_alignment="center",
+                        gap=None,
+                    )
+                    home_entries_col, away_entries_col = st.columns(
                         2, vertical_alignment="top", border=True
                     )
-                    with overview_col:
+                    with territory_dominance:
                         home_c = home_kit_pos["colour1"]
                         away_c = away_kit_pos["colour1"]
                         possession_stats = st.session_state["possession_stats"]
@@ -455,8 +479,120 @@ with tab2:
                                 away_c,
                             )
                         )
+
+                    for col, name, kit, side_ft, side_bx in [
+                        (home_entries_col, home_name_pos, home_kit_pos,
+                         ft_entries["home"], bx_entries["home"]),
+                        (away_entries_col, away_name_pos, away_kit_pos,
+                         ft_entries["away"], bx_entries["away"]),
+                    ]:
+                        col.markdown(
+                            f"<p style='font-weight:bold; font-size:1.3rem; text-align:center; margin:0;'>{name}</p>",
+                            unsafe_allow_html=True,
+                        )
+                        col.markdown(
+                            "<p style='text-align:center; font-size:0.85rem; color:grey; margin:0;'>Final Third Entries</p>",
+                            unsafe_allow_html=True,
+                        )
+                        col.pyplot(plot_zone_entries(side_ft, kit))
+                        col.markdown(
+                            "<p style='text-align:center; font-size:0.85rem; color:grey; margin:0;'>Box Entries</p>",
+                            unsafe_allow_html=True,
+                        )
+                        col.pyplot(plot_zone_entries(side_bx, kit))
+
                 except Exception as e:
                     st.error(f"Error plotting Possession: {e}")
+
+            st.space("small")
+
+            # Defensive actions
+            with st.expander("Defensive Actions", expanded=False):
+                try:
+                    defensive_actions = st.session_state["defensive_actions"]
+                    high_turnovers = st.session_state["high_turnovers"]
+                    home_kit_def = st.session_state["home_kit"]
+                    away_kit_def = st.session_state["away_kit"]
+                    home_name_def = summary_stats["matchInfo"]["homeTeam"]
+                    away_name_def = summary_stats["matchInfo"]["awayTeam"]
+
+                    # High Turnovers
+                    st.markdown(
+                        "<p style='font-weight:600; font-size:1rem; margin:0 0 0.4rem;'>High Turnovers</p>",
+                        unsafe_allow_html=True,
+                    )
+                    home_ht_col, away_ht_col = st.columns(
+                        2, vertical_alignment="top", border=True
+                    )
+                    for col, name, kit, side in [
+                        (home_ht_col, home_name_def, home_kit_def, "home"),
+                        (away_ht_col, away_name_def, away_kit_def, "away"),
+                    ]:
+                        col.markdown(
+                            f"<p style='font-weight:bold; font-size:1.3rem; text-align:center; margin:0;'>{name}</p>",
+                            unsafe_allow_html=True,
+                        )
+                        col.pyplot(plot_high_turnovers(high_turnovers[side], kit))
+                        col.html(_high_turnover_summary_html(kit, high_turnovers[side]))
+
+                    st.space("small")
+
+                    # Defensive Actions
+                    st.markdown(
+                        "<p style='font-weight:600; font-size:1rem; margin:0 0 0.4rem;'>Defensive Actions</p>",
+                        unsafe_allow_html=True,
+                    )
+                    home_def_col, away_def_col = st.columns(
+                        2, vertical_alignment="top", border=True
+                    )
+
+                    for col, name, kit, side in [
+                        (home_def_col, home_name_def, home_kit_def, "home"),
+                        (away_def_col, away_name_def, away_kit_def, "away"),
+                    ]:
+                        col.markdown(
+                            f"<p style='font-weight:bold; font-size:1.3rem; text-align:center; margin:0;'>{name}</p>",
+                            unsafe_allow_html=True,
+                        )
+                        col.pyplot(
+                            plot_defensive_actions(defensive_actions[side], kit)
+                        )
+                        col.html(_defensive_summary_html(kit, defensive_actions[side]))
+
+                except Exception as e:
+                    st.error(f"Error plotting Defensive Actions: {e}")
+
+            st.space("small")
+
+            # Set pieces
+            with st.expander("Set Pieces", expanded=False):
+                try:
+                    corners = st.session_state["corners"]
+                    home_kit_sp = st.session_state["home_kit"]
+                    away_kit_sp = st.session_state["away_kit"]
+                    home_name_sp = summary_stats["matchInfo"]["homeTeam"]
+                    away_name_sp = summary_stats["matchInfo"]["awayTeam"]
+
+                    # Corners
+                    st.markdown(
+                        "<p style='font-weight:600; font-size:1rem; margin:0 0 0.4rem;'>Corners</p>",
+                        unsafe_allow_html=True,
+                    )
+                    home_corners_col, away_corners_col = st.columns(
+                        2, vertical_alignment="top", border=True
+                    )
+                    for col, name, kit, side in [
+                        (home_corners_col, home_name_sp, home_kit_sp, "home"),
+                        (away_corners_col, away_name_sp, away_kit_sp, "away"),
+                    ]:
+                        col.markdown(
+                            f"<p style='font-weight:bold; font-size:1.3rem; text-align:center; margin:0;'>{name}</p>",
+                            unsafe_allow_html=True,
+                        )
+                        col.pyplot(plot_corners(corners[side], kit))
+
+                except Exception as e:
+                    st.error(f"Error plotting Set Pieces: {e}")
 
 
 with tab3:
