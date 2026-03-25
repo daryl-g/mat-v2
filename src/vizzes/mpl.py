@@ -901,7 +901,7 @@ def plot_corners(
     # Coordinates passed to the plot have x already flipped (100 − stored_x)
     # so that the stored value of x≈100 (attacking end) maps to plot_x≈0.
     _pitch_preset = PitchPreset(
-        vertical=False,
+        vertical=True,
         pitch_type="opta",
         half=True,
     )
