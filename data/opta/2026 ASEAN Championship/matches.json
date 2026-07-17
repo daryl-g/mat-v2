@@ -2,7 +2,7 @@
    "matches": [
       {
          "matchInfo": {
-            "id": "f7bf8c72128d4560",
+            "id": "e024d91a2e9f47c8",
             "description": "Cambodia vs Singapore",
             "localStartDate": "2026-07-24",
             "localStartTime": "19:00",
@@ -29,7 +29,7 @@
             "venue": "Morodok Techo National Stadium, Phnom Penh"
          },
          "matchData": {
-            "matchStatus": "Played",
+            "matchStatus": "Fixture",
             "matchLengthMin": "",
             "matchLengthSec": "",
             "period": [
@@ -68,7 +68,7 @@
       },
       {
          "matchInfo": {
-            "id": "f964bbaa15284692",
+            "id": "d9309d84fd0e4a4b",
             "description": "Timor-Leste vs Vietnam",
             "localStartDate": "2026-07-24",
             "localStartTime": "20:30",
@@ -95,7 +95,7 @@
             "venue": "Chonburi Stadium, Chonburi (Thailand)"
          },
          "matchData": {
-            "matchStatus": "Played",
+            "matchStatus": "Fixture",
             "matchLengthMin": "",
             "matchLengthSec": "",
             "period": [
@@ -134,7 +134,7 @@
       },
       {
          "matchInfo": {
-            "id": "1768a9fb22644703",
+            "id": "fd41d5c2ebac4a0a",
             "description": "Singapore vs Timor-Leste",
             "localStartDate": "2026-07-27",
             "localStartTime": "19:00",
@@ -161,7 +161,7 @@
             "venue": "Jalan Besar Stadium, Kallang"
          },
          "matchData": {
-            "matchStatus": "Played",
+            "matchStatus": "Fixture",
             "matchLengthMin": "",
             "matchLengthSec": "",
             "period": [
@@ -200,7 +200,7 @@
       },
       {
          "matchInfo": {
-            "id": "e79c2eb625194dc7",
+            "id": "b5fe9d56546c4c47",
             "description": "Indonesia vs Cambodia",
             "localStartDate": "2026-07-27",
             "localStartTime": "20:30",
@@ -227,7 +227,7 @@
             "venue": "Pakansari Stadium, Bogor"
          },
          "matchData": {
-            "matchStatus": "Played",
+            "matchStatus": "Fixture",
             "matchLengthMin": "",
             "matchLengthSec": "",
             "period": [
@@ -266,7 +266,7 @@
       },
       {
          "matchInfo": {
-            "id": "ad911fd4afe84876",
+            "id": "a0d073b24eed4804",
             "description": "Timor-Leste vs Indonesia",
             "localStartDate": "2026-07-31",
             "localStartTime": "17:00",
@@ -293,7 +293,7 @@
             "venue": "Chonburi Stadium, Chonburi (Thailand)"
          },
          "matchData": {
-            "matchStatus": "Played",
+            "matchStatus": "Fixture",
             "matchLengthMin": "",
             "matchLengthSec": "",
             "period": [
@@ -332,7 +332,7 @@
       },
       {
          "matchInfo": {
-            "id": "414c339693c24c55",
+            "id": "97556fec73b54b0f",
             "description": "Vietnam vs Singapore",
             "localStartDate": "2026-07-31",
             "localStartTime": "20:00",
@@ -359,7 +359,7 @@
             "venue": "Mỹ Đình National Stadium, Hanoi"
          },
          "matchData": {
-            "matchStatus": "Played",
+            "matchStatus": "Fixture",
             "matchLengthMin": "",
             "matchLengthSec": "",
             "period": [
@@ -398,7 +398,7 @@
       },
       {
          "matchInfo": {
-            "id": "c2478d24c5154fd9",
+            "id": "433954b364894ca9",
             "description": "Cambodia vs Timor-Leste",
             "localStartDate": "2026-08-03",
             "localStartTime": "17:30",
@@ -425,7 +425,7 @@
             "venue": "Morodok Techo National Stadium, Phnom Penh"
          },
          "matchData": {
-            "matchStatus": "Played",
+            "matchStatus": "Fixture",
             "matchLengthMin": "",
             "matchLengthSec": "",
             "period": [
@@ -464,7 +464,7 @@
       },
       {
          "matchInfo": {
-            "id": "c01ad73267f2448d",
+            "id": "a42c7c23d62640d3",
             "description": "Indonesia vs Vietnam",
             "localStartDate": "2026-08-03",
             "localStartTime": "20:30",
@@ -491,7 +491,7 @@
             "venue": "Pakansari Stadium, Bogor"
          },
          "matchData": {
-            "matchStatus": "Played",
+            "matchStatus": "Fixture",
             "matchLengthMin": "",
             "matchLengthSec": "",
             "period": [
@@ -530,7 +530,7 @@
       },
       {
          "matchInfo": {
-            "id": "7460105852c44db7",
+            "id": "34c1eca8cdd54080",
             "description": "Vietnam vs Cambodia",
             "localStartDate": "2026-08-07",
             "localStartTime": "20:00",
@@ -557,7 +557,7 @@
             "venue": "Mỹ Đình National Stadium, Hanoi"
          },
          "matchData": {
-            "matchStatus": "Played",
+            "matchStatus": "Fixture",
             "matchLengthMin": "",
             "matchLengthSec": "",
             "period": [
@@ -596,7 +596,7 @@
       },
       {
          "matchInfo": {
-            "id": "07e9ac2f6c994000",
+            "id": "19dc5ffc15384182",
             "description": "Singapore vs Indonesia",
             "localStartDate": "2026-08-07",
             "localStartTime": "21:00",
@@ -623,7 +623,7 @@
             "venue": "Jalan Besar Stadium, Kallang"
          },
          "matchData": {
-            "matchStatus": "Played",
+            "matchStatus": "Fixture",
             "matchLengthMin": "",
             "matchLengthSec": "",
             "period": [
@@ -662,7 +662,7 @@
       },
       {
          "matchInfo": {
-            "id": "c9cc3e2718024edf",
+            "id": "bcf4028e82a547e5",
             "description": "Myanmar vs Malaysia",
             "localStartDate": "2026-07-25",
             "localStartTime": "16:30",
@@ -689,7 +689,7 @@
             "venue": "Thuwunna Stadium, Yangon"
          },
          "matchData": {
-            "matchStatus": "Played",
+            "matchStatus": "Fixture",
             "matchLengthMin": "",
             "matchLengthSec": "",
             "period": [
@@ -728,7 +728,7 @@
       },
       {
          "matchInfo": {
-            "id": "7333d01342b84c6b",
+            "id": "3ce3d417d4d14ecd",
             "description": "Laos vs Thailand",
             "localStartDate": "2026-07-25",
             "localStartTime": "20:00",
@@ -755,7 +755,7 @@
             "venue": "New Laos National Stadium, Vientiane"
          },
          "matchData": {
-            "matchStatus": "Played",
+            "matchStatus": "Fixture",
             "matchLengthMin": "",
             "matchLengthSec": "",
             "period": [
@@ -794,7 +794,7 @@
       },
       {
          "matchInfo": {
-            "id": "20127c70f9e54d2e",
+            "id": "2320e18e3c6846a2",
             "description": "Philippines vs Myanmar",
             "localStartDate": "2026-07-28",
             "localStartTime": "18:00",
@@ -821,7 +821,7 @@
             "venue": "New Clark City Athletics Stadium, Capas"
          },
          "matchData": {
-            "matchStatus": "Played",
+            "matchStatus": "Fixture",
             "matchLengthMin": "",
             "matchLengthSec": "",
             "period": [
@@ -860,7 +860,7 @@
       },
       {
          "matchInfo": {
-            "id": "d9607a4812564517",
+            "id": "9f53ece5b5fb4897",
             "description": "Malaysia vs Laos",
             "localStartDate": "2026-07-28",
             "localStartTime": "21:00",
@@ -887,7 +887,7 @@
             "venue": "Kuala Lumpur Stadium, Kuala Lumpur"
          },
          "matchData": {
-            "matchStatus": "Played",
+            "matchStatus": "Fixture",
             "matchLengthMin": "",
             "matchLengthSec": "",
             "period": [
@@ -926,7 +926,7 @@
       },
       {
          "matchInfo": {
-            "id": "4f95e19b274844a7",
+            "id": "0c5a96e497104ed6",
             "description": "Laos vs Philippines",
             "localStartDate": "2026-08-01",
             "localStartTime": "17:00",
@@ -953,7 +953,7 @@
             "venue": "New Laos National Stadium, Vientiane"
          },
          "matchData": {
-            "matchStatus": "Played",
+            "matchStatus": "Fixture",
             "matchLengthMin": "",
             "matchLengthSec": "",
             "period": [
@@ -992,7 +992,7 @@
       },
       {
          "matchInfo": {
-            "id": "316781e60fc94f8a",
+            "id": "03ee272705f64bec",
             "description": "Thailand vs Malaysia",
             "localStartDate": "2026-08-01",
             "localStartTime": "20:00",
@@ -1019,7 +1019,7 @@
             "venue": "Rajamangala Stadium, Bangkok"
          },
          "matchData": {
-            "matchStatus": "Played",
+            "matchStatus": "Fixture",
             "matchLengthMin": "",
             "matchLengthSec": "",
             "period": [
@@ -1058,7 +1058,7 @@
       },
       {
          "matchInfo": {
-            "id": "0615d7393dae4908",
+            "id": "6efae6b17fd342e7",
             "description": "Myanmar vs Laos",
             "localStartDate": "2026-08-04",
             "localStartTime": "16:30",
@@ -1085,7 +1085,7 @@
             "venue": "Thuwunna Stadium, Yangon"
          },
          "matchData": {
-            "matchStatus": "Played",
+            "matchStatus": "Fixture",
             "matchLengthMin": "",
             "matchLengthSec": "",
             "period": [
@@ -1124,7 +1124,7 @@
       },
       {
          "matchInfo": {
-            "id": "07443a1a492e46f3",
+            "id": "2c9844f3704944db",
             "description": "Philippines vs Thailand",
             "localStartDate": "2026-08-04",
             "localStartTime": "21:00",
@@ -1151,7 +1151,7 @@
             "venue": "New Clark City Athletics Stadium, Capas"
          },
          "matchData": {
-            "matchStatus": "Played",
+            "matchStatus": "Fixture",
             "matchLengthMin": "",
             "matchLengthSec": "",
             "period": [
@@ -1190,7 +1190,7 @@
       },
       {
          "matchInfo": {
-            "id": "a86385c7cbff4efa",
+            "id": "c2ae4c37ebcf4bfe",
             "description": "Thailand vs Myanmar",
             "localStartDate": "2026-08-08",
             "localStartTime": "20:00",
@@ -1217,7 +1217,7 @@
             "venue": "Rajamangala Stadium, Bangkok"
          },
          "matchData": {
-            "matchStatus": "Played",
+            "matchStatus": "Fixture",
             "matchLengthMin": "",
             "matchLengthSec": "",
             "period": [
@@ -1256,7 +1256,7 @@
       },
       {
          "matchInfo": {
-            "id": "016ddee48da54239",
+            "id": "15261ed65d2b486e",
             "description": "Malaysia vs Philippines",
             "localStartDate": "2026-08-08",
             "localStartTime": "21:00",
@@ -1283,7 +1283,7 @@
             "venue": "Kuala Lumpur Stadium, Kuala Lumpur"
          },
          "matchData": {
-            "matchStatus": "Played",
+            "matchStatus": "Fixture",
             "matchLengthMin": "",
             "matchLengthSec": "",
             "period": [

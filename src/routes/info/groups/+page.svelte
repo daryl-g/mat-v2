@@ -13,7 +13,7 @@
         width: 100%;
         height: 100%;
         display: grid;
-        grid-template-columns: repeat(4, 1fr);
+        grid-template-columns: repeat(2, 1fr);
         justify-items: center;
         padding-top: 2rem;
         padding-bottom: 0.5rem;

@@ -84,10 +84,6 @@
     tbody tr:nth-child(-n+2) td:first-child {
         border-left: 3px solid #26DB4D;
     }
-
-    tbody tr:nth-child(3) td:first-child {
-        border-left: 3px solid #D9FF00;
-    }
 </style>
 
 <div class="group-card">
