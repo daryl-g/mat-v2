@@ -5,13 +5,6 @@
 </script>
 
 <style>
-    .schedule-container {
-        background-image: url('$lib/assets/bg/fm_mat_bg.png');
-        background-size: cover;
-        background-position: center;
-        min-height: 100vh;
-        max-height: 100vh;
-    }
 
     .schedule-content {
         padding: 2rem;
@@ -51,6 +44,7 @@
             <button onclick={() => goto('/info/groups')} class:active={page.url.pathname === '/info/groups'}>Groups</button>
             <button onclick={() => goto('/info/bracket')} class:active={page.url.pathname === '/info/bracket'}>Bracket</button>
             <button onclick={() => goto('/info/matches')} class:active={page.url.pathname === '/info/matches'}>Matches</button>
+            <button onclick={() => goto('/info/teams')} class:active={page.url.pathname === '/info/teams'}>Teams</button>
         </div>
 
         {@render children()}

@@ -117,23 +117,23 @@
             <div class="match-description">
                 <div class="home-team">
                     <span>{homeTeam.name}</span>
-                    <img class="home-team-flag" src={homeTeam.flag} alt="{homeTeam.name} logo" width="20" height="20" />
+                    <img class="home-team-flag" src={homeTeam.flag} alt="{homeTeam.name} logo" width="22" height="22" />
                 </div>
                 <div class="match-status">
                     {#if match.matchData.matchStatus === 'Fixture'}
-                        <span>vs</span>
+                        <span>{match.matchInfo.localStartTime}</span>
                     {:else}
                         <span>{match.matchData.scores.total.home} - {match.matchData.scores.total.away}</span>
                     {/if}
                 </div>
                 <div class="away-team">
-                    <img class="away-team-flag" src={awayTeam.flag} alt="{awayTeam.name} logo" width="20" height="20" />
+                    <img class="away-team-flag" src={awayTeam.flag} alt="{awayTeam.name} logo" width="22" height="22" />
                     <span>{awayTeam.name}</span>
                 </div>
             </div>
             <div class="match-info">
                 <div class="match-datetime">
-                    <span>{match.matchInfo.localStartDate} {match.matchInfo.localStartTime}</span>
+                    <span>{match.matchInfo.localStartDate}</span>
                 </div>
                 <div class="match-venue">
                     <span>{match.matchInfo.venue}</span>
