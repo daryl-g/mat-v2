@@ -1,21 +1,42 @@
-# mat-v2
+# sv
 
-Originally intended to be a fresh, new coat of paint for the Match Analysis Tool (MAT) from FIFA Manager 07, the focus was shifted to retain the theme and vibe of the original tool and turn this into a dashboard for my own usage.
+Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
 
-Will get to fill out more of this Readme file later.
+## Creating a project
 
-## Dev notes:
+If you're seeing this, you've probably already done this step. Congrats!
 
-- v0.1:
-    - App will be deployed on Streamlit Cloud privately. Idea for the future is to deploy it onto Google Cloud Run.
-    - App currently uses static Matplotlib vizzes as somewhat placeholders. Plan is to slowly transition to using Plotly for interactive and responsive vizzes.
+```sh
+# create a new project
+npx sv create my-app
+```
 
----
+To recreate this project with the same configuration:
 
-<div align="center">
+```sh
+# recreate this project
+npx sv@0.16.3 create --template minimal --types ts --install npm mat-v2
+```
 
-Inspired by FIFA Manager 07's original Match Analysis Tool.
+## Developing
 
-Made with ❤️ by Daryl & a lil &nbsp;![Claude](https://img.shields.io/badge/Claude-da7756?style=flat-square&labelColor=da7756&logo=claude&logoColor=white)
+Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
 
-</div>
+```sh
+npm run dev
+
+# or start the server and open the app in a new browser tab
+npm run dev -- --open
+```
+
+## Building
+
+To create a production version of your app:
+
+```sh
+npm run build
+```
+
+You can preview the production build with `npm run preview`.
+
+> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
