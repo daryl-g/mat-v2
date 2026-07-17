@@ -1,0 +1,16 @@
+{
+  "groups": [
+    {
+      "id": "7f2e9a4c1b5d8e3a",
+      "name": "Group A",
+      "primaryColor": "#01E676",
+      "textColor": "#000000"
+    },
+    {
+      "id": "3c9f1b2d4e6a7f8b",
+      "name": "Group B",
+      "primaryColor": "#FF1644",
+      "textColor": "#FFFFFF"
+    }
+  ]
+}
