@@ -31,13 +31,13 @@
 
     .team-info {
         display: grid;
-        grid-template-columns: 1fr 1fr;
         gap: 2rem;
         padding: 1rem 2rem;
     }
 
     .team-stats-fixtures {
         display: flex;
+        flex-wrap: wrap;
         flex-direction: column;
         gap: 1rem;
     }
@@ -47,6 +47,23 @@
         color: #3c3e40;
         border-radius: 10px;
         padding: 1rem;
+    }
+
+    .team-squad {
+        display: grid;
+        gap: 1rem;
+    }
+
+    @media (min-width: 768px) {
+        .team-info {
+            flex-direction: row;
+        }
+    }
+
+    @media (min-width: 1024px) {
+        .team-info {
+            grid-template-columns: 1fr 1fr;
+        }
     }
 </style>
 

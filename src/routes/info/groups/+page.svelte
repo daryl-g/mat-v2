@@ -13,11 +13,23 @@
         width: 100%;
         height: 100%;
         display: grid;
-        grid-template-columns: repeat(2, 1fr);
         justify-items: center;
         padding-top: 2rem;
         padding-bottom: 0.5rem;
         gap: 1rem;
+    }
+
+    @media (min-width: 768px) {
+        .groups-grid {
+            flex-direction: row;
+            
+        }
+    }
+
+    @media (min-width: 1024px) {
+        .groups-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
     }
 </style>
 

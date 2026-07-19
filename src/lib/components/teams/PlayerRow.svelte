@@ -15,7 +15,6 @@
 <style>
     .player-row {
         display: grid;
-        grid-template-columns: 0.1fr 0.1fr 1fr 1fr;
         gap: 1rem;
         align-items: center;
         padding: 0.5rem;
@@ -50,6 +49,37 @@
     .player-club {
         justify-self: end;
         padding-right: 1rem;
+    }
+
+    @media (max-width: 768px) {
+        .player-row {
+            grid-template-columns: 0.1fr 0.1fr 1fr;
+            grid-template-rows: 1fr 1fr;
+            gap: 0.5rem;
+        }
+
+        .player-shirt {
+            width: 1.5rem;
+            height: 1.5rem;
+        }
+
+        .player-shirt p, .player-position, .player-name {
+            font-size: 0.9rem;
+        }
+
+        .player-club {
+            grid-column: 1 / -1;
+            justify-self: start;
+            padding-right: 0;
+            padding-left: 0.25rem;
+            font-size: 0.85rem;
+        }
+    }
+
+    @media (min-width: 1024px) {
+        .player-row {
+            grid-template-columns: 0.1fr 0.1fr 1fr 0.5fr;
+        }
     }
 </style>
 

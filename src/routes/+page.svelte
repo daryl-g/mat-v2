@@ -10,6 +10,7 @@
     let selectedTournament: Tournament = $state<Tournament>('2026 ASEAN Championship');
     setContext('selectedTournament', () => selectedTournament);
 </script>
+
 <style>
     /* Home page styles */
     .home-content {
@@ -118,6 +119,7 @@
         display: block;
     }
 </style>
+
 <div class="home-hero-container">
     <div class="home-info-btn">
         <button class="home-info-btn" aria-label="Info">
@@ -149,15 +151,17 @@
                 <button class="tournament-info-btn">
                     <a href="/info">Tournament Info</a>
                 </button>
-                <button class="match-analysis-btn">
-                    <a href="/match">Match Analysis</a>
-                </button>
-                <button class="team-analysis-btn">
-                    <a href="/team">Team Analysis</a>
-                </button>
-                <button class="player-analysis-btn">
-                    <a href="/player">Player Analysis</a>
-                </button>
+                {#if selectedTournament !== '2026 ASEAN Championship'}
+                    <button class="match-analysis-btn">
+                        <a href="/match">Match Analysis</a>
+                    </button>
+                    <button class="team-analysis-btn">
+                        <a href="/team">Team Analysis</a>
+                    </button>
+                    <button class="player-analysis-btn">
+                        <a href="/player">Player Analysis</a>
+                    </button>
+                {/if}
             </div>
         </div>
     </div>

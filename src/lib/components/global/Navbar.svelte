@@ -1,7 +1,5 @@
 <script lang="ts">
     // Library imports
-    import { page } from '$app/state';
-    import { getContext } from 'svelte';
 
     // Asset imports
     import navlogo from '$lib/assets/logos/mat_logo_dark.png';
@@ -16,9 +14,6 @@
 
     // State
     let isHamburger = $state<boolean>(false);
-
-    // Context import
-    const selectedTournament = getContext<() => string>('selectedTournament');
 </script>
 <style>
     .navbar {
@@ -55,15 +50,39 @@
         height: 2.5rem;
     }
 
+    .hamburger {
+        background: none;
+        border: none;
+        cursor: pointer;
+    }
+
+    .hamburger-menu {
+        display: block;
+        position: absolute;
+        top: 4rem;
+        right: 2.5rem;
+        background-color: #ffffff;
+        border-radius: 10px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        padding: 1rem;
+        z-index: 1000;
+    }
+
     .nav-links {
         list-style: none;
         display: flex;
+        flex-direction: column;
         gap: 1.5rem;
+        width: 100%;
         margin: 0;
         padding: 0;
     }
 
     .nav-link {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        width: 100%;
         text-decoration: none;
         color: #333333;
         font-family: 'Inter', sans-serif;
@@ -71,17 +90,12 @@
         position: relative;
     }
 
-    .nav-link:hover {
-        color: #ffffff;
+    .nav-link-container {
+        padding: 0.2rem 0.5rem;
+        border-radius: 10px;
     }
 
-    .nav-link.active::after {
-        content: '';
-        position: absolute;
-        left: 0;
-        bottom: -5px;
-        width: 100%;
-        height: 2px;
+    .nav-link-container:hover {
         background-color: #d1e5f4;
     }
 </style>
@@ -98,12 +112,14 @@
             <div class="hamburger-menu">
                 <ul class="nav-links">
                     {#each navLinks as link}
-                        <li>
-                            <a href={link.href} class="nav-link" class:active={page.url.pathname === link.href}>
-                                <span class="material-symbols-outlined">{link.icon}</span>
-                                {link.name}
-                            </a>
-                        </li>
+                        <div class="nav-link-container">
+                            <li>
+                                <a href={link.href} class="nav-link">
+                                    <span class="material-symbols-outlined">{link.icon}</span>
+                                    {link.name}
+                                </a>
+                            </li>
+                        </div>
                     {/each}
                 </ul>
             </div>

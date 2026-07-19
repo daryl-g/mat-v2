@@ -46,7 +46,6 @@
         padding: 0.7rem;
         border-bottom: 2px solid rgba(0, 0, 0, 0.1);
         display: grid;
-        grid-template-columns: 1fr auto 1fr;
         align-items: center;
         gap: 0.5rem;
         width: 100%;
@@ -69,7 +68,6 @@
 
     .match-description {
         display: grid;
-        grid-template-columns: 1fr auto 1fr;
         align-items: center;
         gap: 1rem;
     }
@@ -82,15 +80,8 @@
         font-weight: 600;
     }
 
-    .home-team {
-        justify-content: flex-end;
-    }
-
-    .away-team {
-        justify-content: flex-start;
-    }
-
     .match-status {
+        display: flex;
         font-family: 'Inter', sans-serif;
         font-size: 1.2rem;
         font-weight: 600;
@@ -99,10 +90,42 @@
     .match-info {
         display: flex;
         flex-direction: column;
-        align-items: flex-end;
         font-family: 'Inter', sans-serif;
         font-size: 0.85rem;
         text-align: right;
+    }
+
+    @media (max-width: 768px) {
+        .match-item {
+            flex-direction: row;
+            grid-template-rows: 1fr auto 1fr;
+            gap: 0.5rem;
+        }
+        .home-team, .away-team, .match-status {
+            justify-content: center;
+        }
+        .match-info {
+            text-align: left;
+        }
+    }
+
+    @media (min-width: 769px) {
+        .match-item {
+            grid-template-columns: 1fr auto 1fr auto;
+        }
+        .match-description {
+            grid-template-columns: 1fr auto 1fr;
+        }
+        .home-team {
+            justify-content: flex-end;
+        }
+
+        .away-team {
+            justify-content: flex-start;
+        }
+        .match-info {
+            text-align: right;
+        }
     }
 </style>
 

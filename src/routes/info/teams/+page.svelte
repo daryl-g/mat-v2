@@ -14,7 +14,6 @@
         width: 90%;
         height: 100%;
         display: grid;
-        grid-template-columns: repeat(4, 1fr);
         justify-items: center;
         padding-top: 2rem;
         padding-bottom: 0.5rem;
@@ -40,6 +39,18 @@
         font-size: clamp(0.7rem, 1.5vw, 1rem);
         word-break: break-word;
         overflow-wrap: break-word;
+    }
+
+    @media (min-width: 768px) {
+        .teams-grid {
+            flex-direction: row;
+        }
+    }
+
+    @media (min-width: 1024px) {
+        .teams-grid {
+            grid-template-columns: repeat(4, 1fr);
+        }
     }
 </style>
 
