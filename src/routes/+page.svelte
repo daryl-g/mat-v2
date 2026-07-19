@@ -1,34 +1,16 @@
-<script>
+<script lang="ts">
+    // Library imports
+    import { setContext } from 'svelte';
+
+    // Asset imports
     import matLogo from '$lib/assets/logos/mat_logo_dark.png';
+
+    // Static types and variables
+    type Tournament = '2020 ASEAN Championship' | '2022 AFC Asian Cup' | '2026 ASEAN Championship';
+    let selectedTournament: Tournament = $state<Tournament>('2026 ASEAN Championship');
+    setContext('selectedTournament', () => selectedTournament);
 </script>
 <style>
-    /* Global styles */
-    :global(html, body) {
-        margin: 0;
-        padding: 0;
-        font-family: 'Inter', sans-serif;
-        color: #3c3e40;
-        height: 100%;
-    }
-
-    :global(h1, p) {
-        margin-top: 0;
-    }
-
-    :global(html) {
-        scroll-behavior: smooth;
-    }
-
-    :global(body) {
-        background: linear-gradient(90deg,rgba(154, 189, 220, 1) 0%, rgba(209, 229, 244, 1) 100%);
-        background-image: url('$lib/assets/bg/fm_mat_bg.png');
-        background-size: cover;
-        background-position: center;
-        background-repeat: no-repeat;
-        background-attachment: fixed;
-        min-height: 100vh;
-    }
-
     /* Home page styles */
     .home-content {
         display: flex;
@@ -84,6 +66,27 @@
         text-decoration: none;
     }
 
+    .tournament-selector {
+        display: flex;
+        justify-content: left;
+    }
+
+    .tournament-selector label {
+        color: #3c3e40;
+        padding-top: 0.5rem;
+        margin-right: 0.5rem;
+        font-family: 'Inter', sans-serif;
+        font-size: 1.1rem;
+    }
+
+    .tournament-selector select {
+        padding: 0.5rem;
+        border-radius: 10px;
+        border: 1px solid rgba(0, 0, 0, 0.1);
+        font-family: 'Inter', sans-serif;
+        font-size: 1.1rem;
+    }
+
     /* Info button styles */
     .home-info-btn {
         position: absolute;
@@ -133,6 +136,14 @@
         <div class="home-hero">
             <div class="home-hero-title">
                 <p><b>Match Analysis Tool</b></p>
+            </div>
+            <div class="tournament-selector">
+                <label for="tournament-select">Select tournament:</label>
+                <select bind:value={selectedTournament}>
+                    <option value="2020 ASEAN Championship">2020 ASEAN Championship</option>
+                    <option value="2022 AFC Asian Cup">2022 AFC Asian Cup</option>
+                    <option value="2026 ASEAN Championship">2026 ASEAN Championship</option>
+                </select>
             </div>
             <div class="home-hero-btn">
                 <button class="tournament-info-btn">
