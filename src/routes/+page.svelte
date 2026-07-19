@@ -1,27 +1,18 @@
-<script>
+<script lang="ts">
+    // Library imports
+    import { setContext } from 'svelte';
+
+    // Asset imports
     import matLogo from '$lib/assets/logos/mat_logo_dark.png';
+
+    // Static types and variables
+    type Tournament = '2022 AFC Asian Cup' | '2026 ASEAN Championship';
+    let selectedTournament: Tournament = $state<Tournament>('2026 ASEAN Championship');
+    setContext('selectedTournament', () => selectedTournament);
 </script>
+
 <style>
-    /* Global styles */
-    :global(html, body) {
-        margin: 0;
-        padding: 0;
-        font-family: 'Inter', sans-serif;
-    }
-
-    :global(h1, p) {
-        margin-top: 0;
-    }
-
     /* Home page styles */
-    .home-hero-container {
-        background-image: url('$lib/assets/bg/fm_mat_bg.png');
-        background-size: cover;
-        background-position: center;
-        min-height: 100vh;
-        max-height: 100vh;
-    }
-
     .home-content {
         display: flex;
         flex-direction: row;
@@ -76,6 +67,27 @@
         text-decoration: none;
     }
 
+    .tournament-selector {
+        display: flex;
+        justify-content: left;
+    }
+
+    .tournament-selector label {
+        color: #3c3e40;
+        padding-top: 0.5rem;
+        margin-right: 0.5rem;
+        font-family: 'Inter', sans-serif;
+        font-size: 1.1rem;
+    }
+
+    .tournament-selector select {
+        padding: 0.5rem;
+        border-radius: 10px;
+        border: 1px solid rgba(0, 0, 0, 0.1);
+        font-family: 'Inter', sans-serif;
+        font-size: 1.1rem;
+    }
+
     /* Info button styles */
     .home-info-btn {
         position: absolute;
@@ -107,6 +119,7 @@
         display: block;
     }
 </style>
+
 <div class="home-hero-container">
     <div class="home-info-btn">
         <button class="home-info-btn" aria-label="Info">
@@ -126,19 +139,28 @@
             <div class="home-hero-title">
                 <p><b>Match Analysis Tool</b></p>
             </div>
+            <div class="tournament-selector">
+                <label for="tournament-select">Select tournament:</label>
+                <select bind:value={selectedTournament}>
+                    <option value="2022 AFC Asian Cup">2022 AFC Asian Cup</option>
+                    <option value="2026 ASEAN Championship">2026 ASEAN Championship</option>
+                </select>
+            </div>
             <div class="home-hero-btn">
                 <button class="tournament-info-btn">
                     <a href="/info">Tournament Info</a>
                 </button>
-                <button class="match-analysis-btn">
-                    <a href="/match">Match Analysis</a>
-                </button>
-                <button class="team-analysis-btn">
-                    <a href="/team">Team Analysis</a>
-                </button>
-                <button class="player-analysis-btn">
-                    <a href="/player">Player Analysis</a>
-                </button>
+                {#if selectedTournament !== '2026 ASEAN Championship'}
+                    <button class="match-analysis-btn">
+                        <a href="/match">Match Analysis</a>
+                    </button>
+                    <button class="team-analysis-btn">
+                        <a href="/team">Team Analysis</a>
+                    </button>
+                    <button class="player-analysis-btn">
+                        <a href="/player">Player Analysis</a>
+                    </button>
+                {/if}
             </div>
         </div>
     </div>

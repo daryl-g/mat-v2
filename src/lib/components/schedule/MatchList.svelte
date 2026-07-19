@@ -46,7 +46,6 @@
         padding: 0.7rem;
         border-bottom: 2px solid rgba(0, 0, 0, 0.1);
         display: grid;
-        grid-template-columns: 1fr auto 1fr;
         align-items: center;
         gap: 0.5rem;
         width: 100%;
@@ -69,7 +68,6 @@
 
     .match-description {
         display: grid;
-        grid-template-columns: 1fr auto 1fr;
         align-items: center;
         gap: 1rem;
     }
@@ -82,15 +80,8 @@
         font-weight: 600;
     }
 
-    .home-team {
-        justify-content: flex-end;
-    }
-
-    .away-team {
-        justify-content: flex-start;
-    }
-
     .match-status {
+        display: flex;
         font-family: 'Inter', sans-serif;
         font-size: 1.2rem;
         font-weight: 600;
@@ -99,10 +90,42 @@
     .match-info {
         display: flex;
         flex-direction: column;
-        align-items: flex-end;
         font-family: 'Inter', sans-serif;
         font-size: 0.85rem;
         text-align: right;
+    }
+
+    @media (max-width: 768px) {
+        .match-item {
+            flex-direction: row;
+            grid-template-rows: 1fr auto 1fr;
+            gap: 0.5rem;
+        }
+        .home-team, .away-team, .match-status {
+            justify-content: center;
+        }
+        .match-info {
+            text-align: left;
+        }
+    }
+
+    @media (min-width: 769px) {
+        .match-item {
+            grid-template-columns: 1fr auto 1fr auto;
+        }
+        .match-description {
+            grid-template-columns: 1fr auto 1fr;
+        }
+        .home-team {
+            justify-content: flex-end;
+        }
+
+        .away-team {
+            justify-content: flex-start;
+        }
+        .match-info {
+            text-align: right;
+        }
     }
 </style>
 
@@ -117,23 +140,23 @@
             <div class="match-description">
                 <div class="home-team">
                     <span>{homeTeam.name}</span>
-                    <img class="home-team-flag" src={homeTeam.flag} alt="{homeTeam.name} logo" width="20" height="20" />
+                    <img class="home-team-flag" src={homeTeam.flag} alt="{homeTeam.name} logo" width="22" height="22" />
                 </div>
                 <div class="match-status">
                     {#if match.matchData.matchStatus === 'Fixture'}
-                        <span>vs</span>
+                        <span>{match.matchInfo.localStartTime}</span>
                     {:else}
                         <span>{match.matchData.scores.total.home} - {match.matchData.scores.total.away}</span>
                     {/if}
                 </div>
                 <div class="away-team">
-                    <img class="away-team-flag" src={awayTeam.flag} alt="{awayTeam.name} logo" width="20" height="20" />
+                    <img class="away-team-flag" src={awayTeam.flag} alt="{awayTeam.name} logo" width="22" height="22" />
                     <span>{awayTeam.name}</span>
                 </div>
             </div>
             <div class="match-info">
                 <div class="match-datetime">
-                    <span>{match.matchInfo.localStartDate} {match.matchInfo.localStartTime}</span>
+                    <span>{match.matchInfo.localStartDate}</span>
                 </div>
                 <div class="match-venue">
                     <span>{match.matchInfo.venue}</span>

@@ -183,7 +183,7 @@ if current_stage == "Group Stage":
             match_data = {
                 "matchStatus": (
                     "Fixture"
-                    if "Match" in match.find("th", {"class": "fscore"}).text.strip()
+                    if "v" in match.find("th", {"class": "fscore"}).text.strip()
                     else "Played"
                 ),
                 "matchLengthMin": "",

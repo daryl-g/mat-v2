@@ -1,42 +1,13 @@
-# sv
+# mat-v2
 
-Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
+Originally intended to be a fresh, new coat of paint for the Match Analysis Tool (MAT) from FIFA Manager 07, the focus was shifted to retain the theme and vibe of the original tool and turn this into a dashboard for my own usage.
 
-## Creating a project
+Will get to fill out more of this Readme file later.
 
-If you're seeing this, you've probably already done this step. Congrats!
+<div align="center">
 
-```sh
-# create a new project
-npx sv create my-app
-```
+Inspired by FIFA Manager 07's original Match Analysis Tool.
 
-To recreate this project with the same configuration:
+Made with ❤️ by Daryl & a lil &nbsp;![Claude](https://img.shields.io/badge/Claude-da7756?style=flat-square&labelColor=da7756&logo=claude&logoColor=white)
 
-```sh
-# recreate this project
-npx sv@0.16.3 create --template minimal --types ts --install npm mat-v2
-```
-
-## Developing
-
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
-
-```sh
-npm run dev
-
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
-```
-
-## Building
-
-To create a production version of your app:
-
-```sh
-npm run build
-```
-
-You can preview the production build with `npm run preview`.
-
-> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
+</div>
