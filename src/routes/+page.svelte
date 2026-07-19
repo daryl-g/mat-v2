@@ -6,7 +6,7 @@
     import matLogo from '$lib/assets/logos/mat_logo_dark.png';
 
     // Static types and variables
-    type Tournament = '2020 ASEAN Championship' | '2022 AFC Asian Cup' | '2026 ASEAN Championship';
+    type Tournament = '2022 AFC Asian Cup' | '2026 ASEAN Championship';
     let selectedTournament: Tournament = $state<Tournament>('2026 ASEAN Championship');
     setContext('selectedTournament', () => selectedTournament);
 </script>
@@ -142,7 +142,6 @@
             <div class="tournament-selector">
                 <label for="tournament-select">Select tournament:</label>
                 <select bind:value={selectedTournament}>
-                    <option value="2020 ASEAN Championship">2020 ASEAN Championship</option>
                     <option value="2022 AFC Asian Cup">2022 AFC Asian Cup</option>
                     <option value="2026 ASEAN Championship">2026 ASEAN Championship</option>
                 </select>

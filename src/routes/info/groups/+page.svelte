@@ -28,12 +28,12 @@
 
     @media (min-width: 1024px) {
         .groups-grid {
-            grid-template-columns: repeat(2, 1fr);
+            grid-template-columns: repeat(var(--cols), minmax(200px, 1fr));
         }
     }
 </style>
 
-<div class="groups-grid">
+<div class="groups-grid" style="--cols: {Math.min(data.groups.length, 4)};">
     {#each data.groups as group}
         <GroupCard
             id={group.id}

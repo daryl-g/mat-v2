@@ -13,13 +13,16 @@
 </script>
 
 <style>
-    .player-row {
+    .player-link {
         display: grid;
         gap: 1rem;
         align-items: center;
         padding: 0.5rem;
         border-bottom: 1px solid rgba(0, 0, 0, 0.1);
         border-radius: 10px;
+        text-decoration: none;
+        color: inherit;
+        cursor: pointer;
     }
 
     .player-shirt {
@@ -48,11 +51,12 @@
 
     .player-club {
         justify-self: end;
+        text-align: right;
         padding-right: 1rem;
     }
 
     @media (max-width: 768px) {
-        .player-row {
+        .player-link {
             grid-template-columns: 0.1fr 0.1fr 1fr;
             grid-template-rows: 1fr 1fr;
             gap: 0.5rem;
@@ -76,24 +80,26 @@
         }
     }
 
-    @media (min-width: 1024px) {
-        .player-row {
-            grid-template-columns: 0.1fr 0.1fr 1fr 0.5fr;
+    @media (min-width: 800px) {
+        .player-link {
+            grid-template-columns: 0.05fr 0.05fr 1fr 0.5fr;
         }
     }
 </style>
 
 <div class="player-row">
-    <div class="player-shirt" style="background-color: {bgColor}; border-radius: 50%; color: {textColor}">
-        <p>{player.shirtNumber}</p>
-    </div>
-    <div class="player-position">
-        <p>{player.position}</p>
-    </div>
-    <div class="player-name">
-        <p>{player.playerName}</p>
-    </div>
-    <div class="player-club">
-        <p>{player.parentClub}</p>
-    </div>
+    <a href={`/players/${player.id}`} class="player-link">
+        <div class="player-shirt" style="background-color: {bgColor}; border-radius: 50%; color: {textColor}">
+            <p>{player.shirtNumber}</p>
+        </div>
+        <div class="player-position">
+            <p>{player.position}</p>
+        </div>
+        <div class="player-name">
+            <p>{player.playerName}</p>
+        </div>
+        <div class="player-club">
+            <p>{player.parentClub}</p>
+        </div>
+    </a>
 </div>
