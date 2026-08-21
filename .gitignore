@@ -24,3 +24,6 @@ vite.config.ts.timestamp-*
 
 # VSCode configs
 .vscode
+
+# Python virtual environment
+.venv

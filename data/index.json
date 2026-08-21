@@ -1,0 +1,20 @@
+{
+  "competitions": [
+    {
+      "id": "3kqpx2mwvn7e4rft6lhcbj8ys",
+      "shortId": "AFF_2026",
+      "competitionId": "8dxsd8xnjm9n1ogo37yomgl3p",
+      "competitionName": "ASEAN Championship",
+      "tournamentCalendarId": "4nwuzhha18ze5n7nbmpayw74k",
+      "tournamentCalendarName": "2026"
+    },
+    {
+      "id": "7bxqm4pltn2w9jrf5vhcbk3ds",
+      "shortId": "AFCU23_2022",
+      "competitionId": "dlf90uty1axvtr1vn2aaw9vqh",
+      "competitionName": "AFC U23 Asian Cup",
+      "tournamentCalendarId": "axnxf31hhqgwntx2l3c9gtu96",
+      "tournamentCalendarName": "2022"
+    }
+  ]
+}

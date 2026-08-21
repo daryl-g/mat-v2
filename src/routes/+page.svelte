@@ -150,7 +150,7 @@
                 <button class="tournament-info-btn">
                     <a href="/info">Tournament Info</a>
                 </button>
-                {#if selectedTournament !== '2026 ASEAN Championship'}
+                <!-- {#if selectedTournament !== '2026 ASEAN Championship'} -->
                     <button class="match-analysis-btn">
                         <a href="/match">Match Analysis</a>
                     </button>
@@ -160,7 +160,7 @@
                     <button class="player-analysis-btn">
                         <a href="/player">Player Analysis</a>
                     </button>
-                {/if}
+                <!-- {/if} -->
             </div>
         </div>
     </div>

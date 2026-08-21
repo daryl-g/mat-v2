@@ -41,6 +41,19 @@ stages_lookup = pd.DataFrame(stages_data["stages"])
 logger.success("Loaded stages lookup table")
 
 # ----------------------------------------------------------
+# Create a lookup table if there are existing matches data
+with open(folder_path + "matches.json", "r") as f:
+    matches_data = json.load(f)
+    f.close()
+
+if len(matches_data["matches"]) != 0:
+    logger.info("Existing matches data found. Creating a lookup table for match IDs.")
+    all_matches_info = [match["matchInfo"] for match in matches_data["matches"]]
+    matches_info_lookup = pd.DataFrame(all_matches_info)[
+        ["id", "description", "localStartDate", "localStartTime"]
+    ]
+
+# ----------------------------------------------------------
 # Determine which stage of the tournament is currently happening
 current_stage = stages_lookup[
     (stages_lookup["startDate"] <= datetime.now().strftime("%Y-%m-%d"))
@@ -67,17 +80,36 @@ if current_stage == "Group Stage":
 
         for match in all_matches:
             # Match info
+            match_description = match.find("h3").text.strip()
+            match_date = (
+                match.find("time")
+                .find_all("span", {"class": "bday dtstart published updated itvstart"})[
+                    0
+                ]
+                .text.strip()
+            )
+
             ## Fill in what's available
             match_info = {
-                "id": (uuid.uuid4().hex)[:16],
-                "description": match.find("h3").text.strip(),
-                "localStartDate": (
-                    match.find("time")
-                    .find_all(
-                        "span", {"class": "bday dtstart published updated itvstart"}
-                    )[0]
-                    .text.strip()
+                "id": (
+                    (uuid.uuid4().hex)[:16]
+                    if (len(matches_data["matches"]) == 0)
+                    or (
+                        matches_info_lookup.loc[
+                            (matches_info_lookup["description"] == match_description)
+                            & (matches_info_lookup["localStartDate"] == match_date)
+                        ].empty
+                    )
+                    else (
+                        matches_info_lookup.loc[
+                            (matches_info_lookup["description"] == match_description)
+                            & (matches_info_lookup["localStartDate"] == match_date),
+                            "id",
+                        ].values[0]
+                    )
                 ),
+                "description": match_description,
+                "localStartDate": match_date,
                 "localStartTime": "",
                 "stage": {
                     "id": stages_lookup[stages_lookup["name"] == "Group Stage"][
@@ -103,7 +135,11 @@ if current_stage == "Group Stage":
                         "position": "away",
                     },
                 ],
-                "venue": re.sub(r"(\[[1-9]\])+", "", match.find("span", {"itemprop": "name address"}).text.strip()),
+                "venue": re.sub(
+                    r"(\[[1-9]\])+",
+                    "",
+                    match.find("span", {"itemprop": "name address"}).text.strip(),
+                ),
             }
 
             ## Extract the time string and clean it

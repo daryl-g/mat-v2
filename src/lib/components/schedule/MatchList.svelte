@@ -143,11 +143,13 @@
                     <img class="home-team-flag" src={homeTeam.flag} alt="{homeTeam.name} logo" width="22" height="22" />
                 </div>
                 <div class="match-status">
-                    {#if match.matchData.matchStatus === 'Fixture'}
-                        <span>{match.matchInfo.localStartTime}</span>
-                    {:else}
-                        <span>{match.matchData.scores.total.home} - {match.matchData.scores.total.away}</span>
-                    {/if}
+                    <a href={`/match/${match.matchInfo.id}`} style="text-decoration: none; color: inherit;">
+                        {#if match.matchData.matchStatus === 'Fixture'}
+                            <span>{match.matchInfo.localStartTime}</span>
+                        {:else}
+                            <span>{match.matchData.scores.total.home} - {match.matchData.scores.total.away}</span>
+                        {/if}
+                    </a>
                 </div>
                 <div class="away-team">
                     <img class="away-team-flag" src={awayTeam.flag} alt="{awayTeam.name} logo" width="22" height="22" />
