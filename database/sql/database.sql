@@ -2,15 +2,15 @@
 
 # -----------------------------------------------------------
 # Bronze schema
-DROP SCHEMA IF EXISTS mat_bronze;
+DROP SCHEMA IF EXISTS mat_bronze CASCADE;
 CREATE SCHEMA IF NOT EXISTS mat_bronze;
 
 # Silver schema
-DROP SCHEMA IF EXISTS mat_silver;
+DROP SCHEMA IF EXISTS mat_silver CASCADE;
 CREATE SCHEMA IF NOT EXISTS mat_silver;
 
 # Gold schema
-DROP SCHEMA IF EXISTS mat_gold;
+DROP SCHEMA IF EXISTS mat_gold CASCADE;
 CREATE SCHEMA IF NOT EXISTS mat_gold;
 
 # -----------------------------------------------------------
@@ -25,6 +25,8 @@ CREATE TABLE IF NOT EXISTS mat_bronze.wiki_matches_raw (
     added timestampz NOT NULL DEFAULT now(),
     PRIMARY KEY (opta_competition_id, opta_calendar_id)
 );
+CREATE INDEX idx_gin_wiki_matches ON mat_bronze.wiki_matches_raw USING GIN (content);
+
 
 DROP TABLE IF EXISTS mat_bronze.wiki_teams_raw;
 CREATE TABLE IF NOT EXISTS mat_bronze.wiki_teams_raw (
@@ -34,6 +36,7 @@ CREATE TABLE IF NOT EXISTS mat_bronze.wiki_teams_raw (
     added timestampz NOT NULL DEFAULT now(),
     PRIMARY KEY (opta_competition_id, opta_calendar_id)
 );
+CREATE INDEX idx_gin_wiki_teams ON mat_bronze.wiki_teams_raw USING GIN (content);
 
 DROP TABLE IF EXISTS mat_bronze.wiki_squads_raw;
 CREATE TABLE IF NOT EXISTS mat_bronze.wiki_squads_raw (
@@ -43,6 +46,7 @@ CREATE TABLE IF NOT EXISTS mat_bronze.wiki_squads_raw (
     added timestampz NOT NULL DEFAULT now(),
     PRIMARY KEY (opta_competition_id, opta_calendar_id)
 );
+CREATE INDEX idx_gin_squads_matches ON mat_bronze.wiki_squads_raw USING GIN (content);
 
 DROP TABLE IF EXISTS mat_bronze.wiki_standings_raw;
 CREATE TABLE IF NOT EXISTS mat_bronze.wiki_standings_raw (
@@ -52,6 +56,7 @@ CREATE TABLE IF NOT EXISTS mat_bronze.wiki_standings_raw (
     added timestampz NOT NULL DEFAULT now(),
     PRIMARY KEY (opta_competition_id, opta_calendar_id)
 );
+CREATE INDEX idx_gin_wiki_standings ON mat_bronze.wiki_standings_raw USING GIN (content);
 
 DROP TABLE IF EXISTS mat_bronze.wiki_groups_raw;
 CREATE TABLE IF NOT EXISTS mat_bronze.wiki_groups_raw (
@@ -61,6 +66,7 @@ CREATE TABLE IF NOT EXISTS mat_bronze.wiki_groups_raw (
     added timestampz NOT NULL DEFAULT now(),
     PRIMARY KEY (opta_competition_id, opta_calendar_id)
 );
+CREATE INDEX idx_gin_wiki_groups ON mat_bronze.wiki_groups_raw USING GIN (content);
 
 DROP TABLE IF EXISTS mat_bronze.wiki_stages_raw;
 CREATE TABLE IF NOT EXISTS mat_bronze.wiki_stages_raw (
@@ -70,6 +76,7 @@ CREATE TABLE IF NOT EXISTS mat_bronze.wiki_stages_raw (
     added timestampz NOT NULL DEFAULT now(),
     PRIMARY KEY (opta_competition_id, opta_calendar_id)
 );
+CREATE INDEX idx_gin_wiki_stages ON mat_bronze.wiki_stages_raw USING GIN (content);
 
 # Raw Opta data
 DROP TABLE IF EXISTS mat_bronze.opta_events_raw;
@@ -80,6 +87,7 @@ CREATE TABLE IF NOT EXISTS mat_bronze.opta_events_raw (
     content jsonb NOT NULL DEFAULT '{}',
     added timestampz NOT NULL DEFAULT now()
 );
+CREATE INDEX idx_gin_opta_events ON mat_bronze.opta_events_raw USING GIN (content);
 
 DROP TABLE IF EXISTS mat_bronze.opta_stats_raw;
 CREATE TABLE IF NOT EXISTS mat_bronze.opta_stats_raw (
@@ -89,6 +97,7 @@ CREATE TABLE IF NOT EXISTS mat_bronze.opta_stats_raw (
     content jsonb NOT NULL DEFAULT '{}',
     added timestampz NOT NULL DEFAULT now()
 );
+CREATE INDEX idx_gin_opta_stats ON mat_bronze.opta_stats_raw USING GIN (content);
 
 DROP TABLE IF EXISTS mat_bronze.opta_passmaps_raw;
 CREATE TABLE IF NOT EXISTS mat_bronze.opta_passmaps_raw (
@@ -98,6 +107,7 @@ CREATE TABLE IF NOT EXISTS mat_bronze.opta_passmaps_raw (
     content jsonb NOT NULL DEFAULT '{}',
     added timestampz NOT NULL DEFAULT now()
 );
+CREATE INDEX idx_gin_opta_passmaps ON mat_bronze.opta_passmaps_raw USING GIN (content);
 
 DROP TABLE IF EXISTS mat_bronze.opta_xgoals_raw;
 CREATE TABLE IF NOT EXISTS mat_bronze.opta_xgoals_raw (
@@ -107,6 +117,7 @@ CREATE TABLE IF NOT EXISTS mat_bronze.opta_xgoals_raw (
     content jsonb NOT NULL DEFAULT '{}',
     added timestampz NOT NULL DEFAULT now()
 );
+CREATE INDEX idx_gin_opta_xgoals ON mat_bronze.opta_xgoals_raw USING GIN (content);
 
 # -----------------------------------------------------------
 # Silver tables
@@ -328,20 +339,22 @@ DROP TABLE IF EXISTS mat_silver.team_stats;
 CREATE TABLE IF NOT EXISTS mat_silver.team_stats (
     id uuid PRIMARY KEY DEFAULT uuidv7(),
     match_id uuid NOT NULL REFERENCES match_event(id) ON DELETE CASCADE ON UPDATE CASCADE,
-    team_id uuid NOT NULL REFERENCES contestant(id) ON DELETE CASCADE ON UPDATE CASCADE
+    contestant_id uuid NOT NULL REFERENCES contestant(id) ON DELETE CASCADE ON UPDATE CASCADE,
+    stat jsonb NOT NULL DEFAULT '{}'
     /*
         When a parent event ID is deleted, its child qualifier(s) will also be deleted.
         When a parent event ID is updated, the update will also change the IDs of the child.
     */
 );
 
-DROP TABLE IF EXISTS mat_silver.team_stats;
-CREATE TABLE IF NOT EXISTS mat_silver.team_stats (
+DROP TABLE IF EXISTS mat_silver.player_stats;
+CREATE TABLE IF NOT EXISTS mat_silver.player_stats (
     id uuid PRIMARY KEY DEFAULT uuidv7(),
     match_id uuid NOT NULL REFERENCES match_event(id) ON DELETE CASCADE ON UPDATE CASCADE,
     player_id uuid NOT NULL REFERENCES lineup(player_id) ON DELETE CASCADE ON UPDATE CASCADE,
     average_x real NOT NULL DEFAULT 0.0,
-    average_y real NOT NULL DEFAULT 0.0
+    average_y real NOT NULL DEFAULT 0.0,
+    stat jsonb NOT NULL DEFAULT '{}'
     /*
         When a parent event ID is deleted, its child qualifier(s) will also be deleted.
         When a parent event ID is updated, the update will also change the IDs of the child.
