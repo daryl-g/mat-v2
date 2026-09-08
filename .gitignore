@@ -27,3 +27,6 @@ vite.config.ts.timestamp-*
 
 # Python virtual environment
 .venv
+
+# Python caches
+__pycache__
