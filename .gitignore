@@ -30,3 +30,6 @@ vite.config.ts.timestamp-*
 
 # Python caches
 __pycache__
+
+# JSON data files
+.json
