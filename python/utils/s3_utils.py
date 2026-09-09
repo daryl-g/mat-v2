@@ -70,7 +70,7 @@ class S3:
         """
 
         try:
-            is_upload_succeed = self.s3_client.upload_file(
+            is_upload_succeed: bool = self.s3_client.upload_file(
                 Filename=file_name, Bucket=bucket_name, Key=key
             )
 
