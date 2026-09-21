@@ -20,7 +20,12 @@ class S3:
     # Class constructor
     def __init__(self):
         # Global authentication
-        self.s3_client = boto3.client("s3")
+        try:
+            self.s3_client = boto3.client("s3")
+            logger.success("AWS credentials successfully retrieved!")
+        except ClientError as e:
+            logger.error(f"Error with S3 client: {e}")
+            raise
 
     def list_files(self, bucket_name: str, prefix: str = "") -> list[str]:
         """
