@@ -40,6 +40,6 @@ stack-data==0.6.3
 tornado==6.5.8
 traitlets==5.15.1
 typing_extensions==4.15.0
-urllib3==2.7.0
+urllib3==2.8.0
 wcwidth==0.8.1
 webencodings==0.5.1
